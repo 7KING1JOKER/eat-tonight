@@ -1,0 +1,22 @@
+[
+  { "id": "pork", "name": "猪肉", "group": "肉" },
+  { "id": "beef", "name": "牛肉", "group": "肉" },
+  { "id": "wing", "name": "鸡翅", "group": "肉" },
+  { "id": "tomato", "name": "番茄", "group": "菜" },
+  { "id": "pepper", "name": "青椒", "group": "菜" },
+  { "id": "broccoli", "name": "西兰花", "group": "菜" },
+  { "id": "cucumber", "name": "黄瓜", "group": "菜" },
+  { "id": "cabbage", "name": "白菜", "group": "菜" },
+  { "id": "garlic", "name": "大蒜", "group": "菜" },
+  { "id": "scallion", "name": "小葱", "group": "菜" },
+  { "id": "potato", "name": "土豆", "group": "菜" },
+  { "id": "egg", "name": "鸡蛋", "group": "蛋奶" },
+  { "id": "milk", "name": "牛奶", "group": "蛋奶" },
+  { "id": "soy", "name": "生抽", "group": "调味" },
+  { "id": "vinegar", "name": "醋", "group": "调味" },
+  { "id": "salt", "name": "盐", "group": "调味" },
+  { "id": "oil", "name": "食用油", "group": "调味" },
+  { "id": "sugar", "name": "白糖", "group": "调味" },
+  { "id": "cola", "name": "可乐", "group": "调味" },
+  { "id": "ginger", "name": "姜", "group": "调味" }
+]

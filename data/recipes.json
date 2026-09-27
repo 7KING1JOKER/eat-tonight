@@ -1,0 +1,56 @@
+[
+  {
+    "id": "tomato-egg",
+    "name": "番茄炒蛋",
+    "need": ["egg", "tomato"],
+    "steps": ["鸡蛋打散，加少许盐", "热油炒蛋盛起", "下番茄炒出汁，倒回鸡蛋调味出锅"]
+  },
+  {
+    "id": "cola-wing",
+    "name": "可乐鸡翅",
+    "need": ["wing", "cola", "soy"],
+    "steps": ["鸡翅划刀焯水", "少油煎至两面金黄", "倒入可乐和生抽，收汁至亮"]
+  },
+  {
+    "id": "pepper-egg",
+    "name": "青椒炒蛋",
+    "need": ["egg", "pepper"],
+    "steps": ["青椒切丝", "鸡蛋炒至凝固盛起", "青椒炒香后倒回鸡蛋，快炒出锅"]
+  },
+  {
+    "id": "garlic-broccoli",
+    "name": "蒜蓉西兰花",
+    "need": ["broccoli", "garlic"],
+    "steps": ["西兰花掰小朵焯水", "蒜末用油炒香", "下西兰花翻炒，加少许盐"]
+  },
+  {
+    "id": "tomato-egg-soup",
+    "name": "番茄蛋汤",
+    "need": ["egg", "tomato", "salt"],
+    "steps": ["番茄切块炒出沙", "加水煮开", "淋入蛋液，加盐"]
+  },
+  {
+    "id": "steamed-egg",
+    "name": "蒸蛋",
+    "need": ["egg"],
+    "steps": ["鸡蛋打散，加一点温水", "过筛去泡沫", "盖上蒸 8 到 10 分钟"]
+  },
+  {
+    "id": "cucumber-egg",
+    "name": "黄瓜炒鸡蛋",
+    "need": ["cucumber", "egg"],
+    "steps": ["黄瓜切片，鸡蛋炒熟盛起", "黄瓜快炒至断生", "倒回鸡蛋翻匀出锅"]
+  },
+  {
+    "id": "vinegar-cabbage",
+    "name": "醋溜白菜",
+    "need": ["cabbage", "vinegar"],
+    "steps": ["白菜帮切片", "热油炒至微软", "沿锅边淋醋，快炒出锅"]
+  },
+  {
+    "id": "potato-beef",
+    "name": "土豆烧牛肉",
+    "need": ["potato", "beef", "soy", "oil"],
+    "steps": ["牛肉焯水", "油炒姜蒜和牛肉上色", "加土豆和生抽，加水炖到软"]
+  }
+]
