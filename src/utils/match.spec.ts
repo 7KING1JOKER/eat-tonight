@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { matchRecipes, type Recipe } from './match'
+import type { Recipe } from '../types/eat'
+import { matchRecipes } from './match.js'
 
 const tomatoEgg: Recipe = {
   id: 'r1',
