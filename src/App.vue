@@ -1,14 +1,10 @@
 <script setup lang="ts">
-import { onLaunch, onShow, onHide } from "@dcloudio/uni-app";
+import { onLaunch } from '@dcloudio/uni-app'
+import { initCloud } from '@/cloud/auth'
+
 onLaunch(() => {
-  console.log("App Launch");
-});
-onShow(() => {
-  console.log("App Show");
-});
-onHide(() => {
-  console.log("App Hide");
-});
+  initCloud()
+})
 </script>
 <style>
 page {
