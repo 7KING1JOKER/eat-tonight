@@ -1,6 +1,7 @@
 import type { CustomIngredient, Ingredient, Recipe, RecipeSource } from '@/types/eat'
 import { hasCloudEnv } from './env'
 
+/** 云上一条文档的字段。只列本文件会读到的键，没有的字段都是可选。这是编译期类型，里面不存数据。 */
 interface CloudDoc {
   _id?: string
   id?: string
@@ -14,6 +15,10 @@ interface CloudDoc {
   ownerId?: string
 }
 
+/**
+ * `collection().doc(id)` 定位到的一条文档。
+ * `get` 读取，`update` 改已有文档，`set` 整份写入（文档不存在时用），`remove` 删除。
+ */
 interface CloudQuery {
   get(): Promise<{ data: CloudDoc | CloudDoc[] }>
   update(options: { data: Record<string, unknown> }): Promise<unknown>
@@ -21,6 +26,10 @@ interface CloudQuery {
   remove(): Promise<unknown>
 }
 
+/**
+ * `database().collection(集合名)` 返回的一张集合，例如 ingredients、fridges。
+ * 只声明本文件用到的方法，让后面的调用通过类型检查。运行时仍是微信云数据库，这个接口不代替真库。
+ */
 interface CloudCollection {
   limit(n: number): { get(): Promise<{ data: CloudDoc[] }> }
   doc(id: string): CloudQuery
@@ -28,6 +37,7 @@ interface CloudCollection {
   add(options: { data: Record<string, unknown> }): Promise<unknown>
 }
 
+/** `wx.cloud.database()` 的返回值。`collection` 按名字取出上面的一张集合。 */
 interface WxDatabase {
   collection(name: string): CloudCollection
 }
