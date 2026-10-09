@@ -1,9 +1,9 @@
-export const CACHE_KEY_ING = 'eat.ingredients'
-export const CACHE_KEY_REC = 'eat.recipes'
-export const CACHE_KEY_FRIDGE = 'eat.fridge'
-export const CACHE_KEY_MINE = 'eat.myRecipes'
-export const CACHE_KEY_DETAIL = 'eat.detail'
-export const CACHE_KEY_ANON = 'eat.anonId'
+export const CACHE_KEY_ING = 'eat.ingredients' // 官方食材缓存键
+export const CACHE_KEY_REC = 'eat.recipes' // 官方菜谱缓存键
+export const CACHE_KEY_FRIDGE = 'eat.fridge' // 冰箱缓存键
+export const CACHE_KEY_MINE = 'eat.myRecipes' // 我的菜谱缓存键
+export const CACHE_KEY_DETAIL = 'eat.detail' // 菜谱详情缓存键
+export const CACHE_KEY_ANON = 'eat.anonId' // 匿名用户 ID 缓存键
 
 /**
  * 读本地缓存。统一按 JSON 字符串存放，也兼容运行时已经反序列化过的值。

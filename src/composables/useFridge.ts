@@ -117,6 +117,7 @@ async function load(): Promise<void> {
     }
   }
 
+  // 如果官方食材为空，则用种子填充
   if (ingredients.value.length === 0) {
     const seed = await readSeedBundle()
     ingredients.value = seed.ingredients
