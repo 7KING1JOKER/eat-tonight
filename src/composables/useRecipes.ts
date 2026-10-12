@@ -1,9 +1,10 @@
 import { ref } from 'vue'
 import type { Recipe } from '@/types/eat'
 import { login } from '@/cloud/auth'
-import { fetchMyRecipes, fetchOfficialRecipes } from '@/cloud/db'
+import { fetchMyRecipes, fetchOfficialRecipes, upsertMyRecipe, removeMyRecipe } from '@/cloud/db'
 import { readSeedBundle } from '@/cloud/fixture'
 import { CACHE_KEY_MINE, CACHE_KEY_REC, readCache, writeCache } from '@/utils/storage'
+import { hasCloudEnv } from '@/cloud/env'
 
 const official = ref<Recipe[]>([]) // 官方菜谱
 const mine = ref<Recipe[]>([]) // 我的菜谱
@@ -64,6 +65,59 @@ async function load(): Promise<void> {
   loading.value = false
 }
 
+/** 按业务 id 替换或追加一道我的菜，并写入本地缓存。 */
+function rememberMine(recipe: Recipe): void {
+  mine.value = mine.value.filter((item) => item.id !== recipe.id).concat(recipe)
+  writeCache(CACHE_KEY_MINE, mine.value)
+}
+
+/**
+ * 保存一道我的菜。没有云或未登录时只写本地。
+ * 云环境已配置且有 openid 时先 upsertMyRecipe；请求失败不改 mine。
+ * 成功后再按 id 替换本地列表。步骤可以为空，最多 5 条。
+ */
+async function saveMine(input: { id?: string; name: string; need: string[]; steps: string[] }): Promise<void> {
+  const name = input.name.trim()
+  const need = input.need.map((item) => item.trim()).filter((item) => item.length > 0)
+  const steps = input.steps.map((item) => item.trim()).filter((item) => item.length > 0)
+
+  if (name.length === 0 || need.length < 1) {
+    throw new Error('菜名不能为空，且至少需要一样食材')
+  }
+  if (steps.length > 5) {
+    throw new Error('步骤最多 5 条')
+  }
+
+  const recipe: Recipe = {
+    id: input.id || `m_${Date.now()}`,
+    name,
+    need,
+    steps,
+    source: 'mine',
+  }
+  const session = await login()
+  if (!hasCloudEnv() || !session) {
+    rememberMine(recipe)
+    return
+  }
+  // 更新云端
+  await upsertMyRecipe({ ...recipe, ownerId: session.openid })
+  rememberMine(recipe)
+}
+
+/**
+ * 删除一道我的菜。云环境已配置且有 openid 时先 removeMyRecipe。
+ * 请求失败不改本地列表。没有云或未登录时直接从本地去掉。
+ */
+async function removeMine(id: string): Promise<void> {
+  const session = await login()
+  if(hasCloudEnv() && session) {
+    await removeMyRecipe(id, session.openid)
+  }
+  mine.value = mine.value.filter((item) => item.id !== id)
+  writeCache(CACHE_KEY_MINE, mine.value)
+}
+
 export function useRecipes() {
-  return { official, mine, loading, loadError, load }
+  return { official, mine, loading, loadError, load, saveMine, removeMine }
 }

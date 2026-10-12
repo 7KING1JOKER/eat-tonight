@@ -1,5 +1,8 @@
 <template>
   <view class="page">
+    <view class="top">
+      <text class="mine-link" @tap="goMine">我的菜</text>
+    </view>
     <EmptyState v-if="have.length === 0" title="先去冰箱勾食材" />
     <SkeletonList v-else-if="showSkeleton" />
     <EmptyState v-else-if="noRecipes" title="菜谱暂时没有" />
@@ -69,6 +72,10 @@ function navigateToDetail(item: Matched) {
   })
 }
 
+function goMine() {
+  uni.navigateTo({ url: '/pages/mine/index' })
+}
+
 onShow(() => {
   void loadFridge()
   void loadRecipes()
@@ -81,6 +88,17 @@ onShow(() => {
 .page {
   padding: 32rpx 32rpx 48rpx;
   box-sizing: border-box;
+}
+
+.top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24rpx;
+}
+
+.mine-link {
+  color: var(--color-ready);
+  font-size: 28rpx;
 }
 
 .group {
