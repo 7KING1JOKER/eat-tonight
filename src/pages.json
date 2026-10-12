@@ -36,6 +36,17 @@
 					}
 				}
 			]
+		},
+		{
+			"root": "pages/privacy",
+			"pages": [
+				{
+					"path": "index",
+					"style": {
+						"navigationBarTitleText": "隐私说明"
+					}
+				}
+			]
 		}
 	],
 	"globalStyle": {
@@ -59,6 +70,12 @@
 			{
 				"pagePath": "pages/fridge/index",
 				"text": "冰箱",
+				"iconPath": "static/logo.png",
+				"selectedIconPath": "static/logo.png"
+			},
+			{
+				"pagePath": "pages/mine/index",
+				"text": "我的",
 				"iconPath": "static/logo.png",
 				"selectedIconPath": "static/logo.png"
 			}

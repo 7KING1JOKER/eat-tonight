@@ -1,4 +1,6 @@
 import type { Ingredient, Recipe } from '@/types/eat'
+import ingredientsJson from '../../data/ingredients.json'
+import recipesJson from '../../data/recipes.json'
 
 interface SeedRecipe {
   id: string
@@ -12,10 +14,8 @@ interface SeedRecipe {
  * 页面不要直接 import JSON。设置了 CLOUD_ENV_ID 之后，调用方不应再走这里。
  */
 export async function readSeedBundle(): Promise<{ ingredients: Ingredient[]; recipes: Recipe[] }> {
-  const ingredientsMod = await import('../../data/ingredients.json')
-  const recipesMod = await import('../../data/recipes.json')
-  const ingredients = ingredientsMod.default as Ingredient[]
-  const recipes = (recipesMod.default as SeedRecipe[]).map((row) => ({
+  const ingredients = ingredientsJson as Ingredient[]
+  const recipes = (recipesJson as SeedRecipe[]).map((row) => ({
     ...row,
     source: 'official' as const,
   }))

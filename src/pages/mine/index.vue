@@ -14,6 +14,7 @@
     </view>
 
     <button class="ghost" @tap="clearOfficial">清官方菜缓存</button>
+    <button class="ghost" @tap="openPrivacy">隐私说明</button>
   </view>
 </template>
 
@@ -48,6 +49,10 @@ function confirmRemove(id: string, name: string) {
       })
     },
   })
+}
+
+function openPrivacy() {
+  uni.navigateTo({ url: '/pages/privacy/index' })
 }
 
 function clearOfficial() {
