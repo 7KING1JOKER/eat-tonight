@@ -13,6 +13,7 @@
           :name="item.name"
           :missing="namesOf(item.missing)"
           :source="item.source"
+          @click="navigateToDetail(item)"
         />
       </view>
       <view class="group">
@@ -23,6 +24,7 @@
           :name="item.name"
           :missing="namesOf(item.missing)"
           :source="item.source"
+          @click="navigateToDetail(item)"
         />
       </view>
     </template>
@@ -38,6 +40,8 @@ import SkeletonList from '@/components/SkeletonList.vue'
 import { useFridge } from '@/composables/useFridge'
 import { useMatch } from '@/composables/useMatch'
 import { useRecipes } from '@/composables/useRecipes'
+import type { Matched } from '@/types/eat'
+import { CACHE_KEY_DETAIL, writeCache } from '@/utils/storage'
 
 const { have, ingredients, custom, load: loadFridge } = useFridge()
 const { official, mine, loading, loadError, load: loadRecipes } = useRecipes()
@@ -58,10 +62,19 @@ function namesOf(ids: string[]): string[] {
   return ids.map((id) => ingredientName.value.get(id) ?? id)
 }
 
+function navigateToDetail(item: Matched) {
+  writeCache<Matched>(CACHE_KEY_DETAIL, item)
+  uni.navigateTo({
+    url: `/pages/detail/index?id=${item.id}&source=${item.source}`
+  })
+}
+
 onShow(() => {
   void loadFridge()
   void loadRecipes()
 })
+
+
 </script>
 
 <style scoped>
