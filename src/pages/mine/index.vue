@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <button class="primary" @tap="openCreate">新建</button>
+    <button class="primary" hover-class="none" @tap="openCreate">新建</button>
 
     <EmptyState v-if="mine.length === 0" title="还没有自己的菜" />
     <view v-else>
@@ -13,8 +13,8 @@
       </view>
     </view>
 
-    <button class="ghost" @tap="clearOfficial">清官方菜缓存</button>
-    <button class="ghost" @tap="openPrivacy">隐私说明</button>
+    <button class="ghost" hover-class="none" @tap="clearOfficial">清官方菜缓存</button>
+    <button class="ghost" hover-class="none" @tap="openPrivacy">隐私说明</button>
   </view>
 </template>
 
@@ -65,7 +65,7 @@ function clearOfficial() {
 
 <style scoped>
 .page {
-  padding: 32rpx 32rpx 48rpx;
+  padding: 40rpx 40rpx calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -74,49 +74,54 @@ function clearOfficial() {
   margin: 0;
   height: 72rpx;
   line-height: 72rpx;
-  border-radius: 16rpx;
-  font-size: 28rpx;
+  border-radius: 24rpx;
+  font-size: 30rpx;
 }
 
 .primary {
-  margin-bottom: 28rpx;
+  margin-bottom: 32rpx;
   background: var(--color-ready);
-  color: #fff;
+  color: var(--color-on-ready);
 }
 
 .card {
-  margin-bottom: 16rpx;
-  padding: 24rpx 28rpx;
-  border-radius: 20rpx;
-  background: var(--color-card);
+  margin-bottom: 0;
+  padding: 32rpx 0;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
 }
 
 .head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 16rpx;
 }
 
 .name {
   color: var(--color-text);
-  font-size: 32rpx;
+  font-size: 44rpx;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .remove {
+  flex-shrink: 0;
   color: var(--color-almost);
-  font-size: 26rpx;
+  font-size: 24rpx;
 }
 
 .meta {
   display: block;
   margin-top: 8rpx;
   color: var(--color-muted);
-  font-size: 26rpx;
+  font-size: 24rpx;
 }
 
 .ghost {
-  margin-top: 28rpx;
-  background: var(--color-chip);
+  margin-top: 32rpx;
+  border: 1px solid var(--color-line);
+  background: transparent;
   color: var(--color-text);
 }
 </style>

@@ -62,32 +62,32 @@
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#f7f4ef",
-		"backgroundColor": "#f7f4ef"
+		"navigationBarBackgroundColor": "#e8e0c8",
+		"backgroundColor": "#f4f1de"
 	},
 	"tabBar": {
-		"color": "#8a8278",
+		"color": "#7a7166",
 		"selectedColor": "#2f6b3a",
-		"backgroundColor": "#ffffff",
+		"backgroundColor": "#e8e0c8",
 		"borderStyle": "white",
 		"list": [
 			{
 				"pagePath": "pages/eat/index",
 				"text": "吃啥",
-				"iconPath": "static/logo.png",
-				"selectedIconPath": "static/logo.png"
+				"iconPath": "static/icons/tab-eat.png",
+				"selectedIconPath": "static/icons/tab-eat-on.png"
 			},
 			{
 				"pagePath": "pages/fridge/index",
 				"text": "冰箱",
-				"iconPath": "static/logo.png",
-				"selectedIconPath": "static/logo.png"
+				"iconPath": "static/icons/tab-fridge.png",
+				"selectedIconPath": "static/icons/tab-fridge-on.png"
 			},
 			{
 				"pagePath": "pages/mine/index",
 				"text": "我的",
-				"iconPath": "static/logo.png",
-				"selectedIconPath": "static/logo.png"
+				"iconPath": "static/icons/tab-mine.png",
+				"selectedIconPath": "static/icons/tab-mine-on.png"
 			}
 		]
 	}

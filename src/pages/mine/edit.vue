@@ -5,7 +5,10 @@
     <IngredientGroups :selected="need" @toggle="toggleNeed" />
 
     <view v-if="custom.length" class="group">
-      <text class="group-name">自定义</text>
+      <view class="group-label">
+        <AppIcon name="custom" tone="earth" />
+        <text class="group-name">自定义</text>
+      </view>
       <view class="chips">
         <IngredientChip
           v-for="item in custom"
@@ -19,13 +22,14 @@
     </view>
 
     <textarea v-model="stepsText" class="steps" placeholder="步骤，一行一条，最多 5 条" />
-    <button class="primary" @tap="submit">保存</button>
+    <button class="primary" hover-class="none" @tap="submit">保存</button>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import AppIcon from '@/components/AppIcon.vue'
 import IngredientChip from '@/components/IngredientChip.vue'
 import IngredientGroups from '@/components/IngredientGroups.vue'
 import { useFridge } from '@/composables/useFridge'
@@ -91,7 +95,7 @@ async function submit() {
 
 <style scoped>
 .page {
-  padding: 32rpx 32rpx 48rpx;
+  padding: 40rpx 40rpx calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -99,10 +103,11 @@ async function submit() {
 .steps {
   width: 100%;
   box-sizing: border-box;
-  border-radius: 16rpx;
-  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: 24rpx;
+  background: transparent;
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: 30rpx;
 }
 
 .input {
@@ -112,14 +117,20 @@ async function submit() {
 }
 
 .group {
-  margin-bottom: 36rpx;
+  margin-bottom: 48rpx;
+}
+
+.group-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
 }
 
 .group-name {
-  display: block;
-  margin-bottom: 16rpx;
-  color: var(--color-muted);
+  color: var(--color-earth);
   font-size: 26rpx;
+  letter-spacing: 0.04em;
 }
 
 .chips {
@@ -138,9 +149,9 @@ async function submit() {
   margin: 0;
   height: 72rpx;
   line-height: 72rpx;
-  border-radius: 16rpx;
+  border-radius: 24rpx;
   background: var(--color-ready);
-  color: #fff;
-  font-size: 28rpx;
+  color: var(--color-on-ready);
+  font-size: 30rpx;
 }
 </style>

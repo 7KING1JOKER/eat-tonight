@@ -13,15 +13,15 @@ defineProps<{
 
 <style scoped>
 .empty {
-  padding: 80rpx 32rpx;
+  padding: 80rpx 0;
 }
 
 .mark {
-  width: 72rpx;
-  height: 72rpx;
+  width: 16rpx;
+  height: 16rpx;
   margin-bottom: 24rpx;
-  border-radius: 50%;
-  background: var(--color-chip);
+  border-radius: 4rpx;
+  background: var(--color-earth);
 }
 
 .title {

@@ -1,8 +1,17 @@
 <template>
   <view>
-    <view v-for="group in groups" :key="group.name" class="group">
+    <view
+      v-for="(group, index) in groups"
+      :key="group.name"
+      class="group reveal"
+      :class="{ shown: revealed[group.name] }"
+      :data-index="index"
+    >
     <view class="group-head" @tap="toggleGroup(group.name, group.extra)">
-      <text class="group-name">{{ group.name }}</text>
+      <view class="group-label">
+        <AppIcon :name="groupIcon(group.name)" tone="earth" />
+        <text class="group-name">{{ group.name }}</text>
+      </view>
       <text v-if="group.extra" class="arrow" :class="{ open: isOpen(group.name) }">▾</text>
     </view>
     <view class="chips">
@@ -20,10 +29,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, getCurrentInstance, nextTick, onUnmounted, ref, watch } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 import IngredientChip from '@/components/IngredientChip.vue'
 import { useFridge } from '@/composables/useFridge'
 import { COMMON_INGREDIENTS } from '@/utils/commonIngredients'
+import { groupIcon } from '@/utils/icons'
 
 const props = defineProps<{
   selected: string[]
@@ -35,6 +46,9 @@ const emit = defineEmits<{
 
 const { ingredients } = useFridge()
 const opened = ref<Record<string, boolean>>({})
+const revealed = ref<Record<string, boolean>>({})
+let revealObserver: { disconnect: () => void } | null = null
+let revealFallback: ReturnType<typeof setTimeout> | null = null
 
 interface IngredientGroup {
   name: string
@@ -59,6 +73,50 @@ const groups = computed(() => {
   }))
 })
 
+function showAt(index: number) {
+  const name = groups.value[index]?.name
+  if (!name || revealed.value[name]) return
+  revealed.value = { ...revealed.value, [name]: true }
+}
+
+function revealAll() {
+  const next = { ...revealed.value }
+  for (const group of groups.value) next[group.name] = true
+  revealed.value = next
+}
+
+function bindReveal(proxy: object | null | undefined) {
+  revealObserver?.disconnect()
+  revealObserver = null
+  if (groups.value.length === 0) return
+  if (proxy == null || typeof uni.createIntersectionObserver !== 'function') {
+    revealAll()
+    return
+  }
+  const observer = uni.createIntersectionObserver(proxy as never, { observeAll: true })
+  revealObserver = observer
+  observer.relativeToViewport({ bottom: 32 }).observe('.reveal', (res) => {
+    const hit = res as { intersectionRatio?: number; dataset?: { index?: string | number } }
+    const index = Number(hit.dataset?.index)
+    if ((hit.intersectionRatio ?? 0) > 0 && Number.isFinite(index)) showAt(index)
+  })
+  if (revealFallback) clearTimeout(revealFallback)
+  revealFallback = setTimeout(() => {
+    const anyShown = groups.value.some((group) => revealed.value[group.name])
+    if (!anyShown) revealAll()
+  }, 500)
+}
+
+const host = getCurrentInstance()?.proxy
+watch(groups, () => {
+  void nextTick(() => bindReveal(host))
+}, { immediate: true })
+
+onUnmounted(() => {
+  revealObserver?.disconnect()
+  if (revealFallback) clearTimeout(revealFallback)
+})
+
 function isOpen(name: string): boolean {
   return opened.value[name] === true
 }
@@ -77,7 +135,20 @@ function shownItems(group: IngredientGroup) {
 
 <style scoped>
 .group {
-  margin-bottom: 36rpx;
+  margin-bottom: 48rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(16rpx);
+}
+
+.reveal.shown {
+  opacity: 1;
+  transform: none;
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
 }
 
 .group-head {
@@ -85,12 +156,23 @@ function shownItems(group: IngredientGroup) {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16rpx;
+  transition: opacity 160ms var(--ease-out);
+}
+
+.group-head:active {
+  opacity: 0.65;
+}
+
+.group-label {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
 }
 
 .group-name {
-  display: block;
-  color: var(--color-muted);
+  color: var(--color-earth);
   font-size: 26rpx;
+  letter-spacing: 0.04em;
 }
 
 .arrow {

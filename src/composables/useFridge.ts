@@ -66,6 +66,13 @@ function toggle(id: string): void {
   sync()
 }
 
+/** 取消全部勾选。自定义食材名字还留着，只是不再算进冰箱。 */
+function clearHave(): void {
+  if (have.value.length === 0) return
+  have.value = []
+  void sync()
+}
+
 const CUSTOM_ID_ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz'
 
 /** 自定义食材编号：`c_` 加 8 位随机字符。和中文名分开，改名不必换编号。 */
@@ -156,5 +163,5 @@ async function load(): Promise<void> {
 }
 
 export function useFridge() {
-  return { have, ingredients, custom, toggle, addCustom, load }
+  return { have, ingredients, custom, toggle, clearHave, addCustom, load }
 }

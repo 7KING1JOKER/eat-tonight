@@ -10,20 +10,9 @@
 }
 
 .row {
-  height: 96rpx;
+  height: 88rpx;
   margin-bottom: 16rpx;
-  border-radius: 20rpx;
-  background: linear-gradient(90deg, var(--color-chip), #f7f4ef, var(--color-chip));
-  background-size: 200% 100%;
-  animation: shimmer 1.2s ease infinite;
-}
-
-@keyframes shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: -100% 0;
-  }
+  border-radius: 24rpx;
+  background: var(--color-line);
 }
 </style>

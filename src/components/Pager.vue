@@ -1,13 +1,18 @@
 <template>
   <view v-if="pages > 1" class="pager">
-    <text class="btn" :class="{ off: page <= 1 }" @tap="go(page - 1)">上一页</text>
+    <view class="btn" :class="{ off: page <= 1 }" @tap="go(page - 1)">
+      <AppIcon name="arrow-left" />
+    </view>
     <text class="index">{{ page }} / {{ pages }}</text>
-    <text class="btn" :class="{ off: page >= pages }" @tap="go(page + 1)">下一页</text>
+    <view class="btn" :class="{ off: page >= pages }" @tap="go(page + 1)">
+      <AppIcon name="arrow-right" />
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import AppIcon from '@/components/AppIcon.vue'
 
 const props = defineProps<{
   page: number
@@ -32,20 +37,32 @@ function go(next: number) {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 28rpx;
-  margin-top: 8rpx;
+  gap: 32rpx;
+  margin-top: 24rpx;
 }
 
-.btn,
 .index {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: var(--color-text);
 }
 
 .btn {
-  padding: 8rpx 20rpx;
-  border-radius: 999rpx;
-  background: var(--color-chip);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  transition: transform 160ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(.off):hover {
+    transform: translateY(-4rpx);
+  }
+}
+
+.btn:not(.off):active {
+  transform: scale(0.92);
 }
 
 .off {

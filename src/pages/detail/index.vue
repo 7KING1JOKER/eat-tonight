@@ -41,7 +41,7 @@
         <text class="label">出处</text>
         <text class="body">{{ recipe.credit.site }} · {{ recipe.credit.recipeBy }}</text>
         <text class="note">{{ recipe.credit.license }}</text>
-        <text class="url" selectable>{{ recipe.credit.url }}</text>
+        <text class="url" user-select>{{ recipe.credit.url }}</text>
       </view>
     </template>
   </view>
@@ -111,7 +111,7 @@ onLoad((query) => {
 
 <style scoped>
 .page {
-  padding: 32rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
+  padding: 40rpx 40rpx calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -133,7 +133,9 @@ onLoad((query) => {
 
 .name {
   color: var(--color-text);
-  font-size: 40rpx;
+  font-size: 44rpx;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .intro {
@@ -147,7 +149,7 @@ onLoad((query) => {
   margin-top: 8rpx;
   color: var(--color-muted);
   font-size: 24rpx;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .url {
@@ -170,8 +172,9 @@ onLoad((query) => {
 .label {
   display: block;
   margin-bottom: 12rpx;
-  color: var(--color-text);
-  font-size: 30rpx;
+  color: var(--color-earth);
+  font-size: 26rpx;
+  letter-spacing: 0.04em;
 }
 
 .have {
@@ -184,7 +187,7 @@ onLoad((query) => {
 
 .body {
   color: var(--color-text);
-  font-size: 28rpx;
+  font-size: 30rpx;
   line-height: 1.6;
 }
 

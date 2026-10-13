@@ -1,23 +1,28 @@
 <template>
-  <view class="card" :class="missing.length ? 'almost' : 'ready'" @tap.stop="emit('open')">
-    <view class="head">
-      <text class="name">{{ name }}</text>
-      <text class="source">{{ source === 'mine' ? '我的' : '官方' }}</text>
+  <view
+    class="card"
+    :class="missing.length ? 'almost' : 'ready'"
+    :style="{ animationDelay: `${delay}ms` }"
+    @tap.stop="emit('open')"
+  >
+    <view class="lift">
+    <view class="face">
+      <view class="name">{{ name }}</view>
+      <view v-if="missing.length" class="missing">{{ missing.join('、') }}</view>
     </view>
-    <view v-if="missing.length" class="chips">
-      <text v-for="item in missing" :key="item" class="chip">{{ item }}</text>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import type { RecipeSource } from '@/types/eat'
-
-defineProps<{
-  name: string
-  missing: string[]
-  source: RecipeSource
-}>()
+withDefaults(
+  defineProps<{
+    name: string
+    missing: string[]
+    delay?: number
+  }>(),
+  { delay: 0 },
+)
 
 const emit = defineEmits<{
   open: []
@@ -26,48 +31,83 @@ const emit = defineEmits<{
 
 <style scoped>
 .card {
-  margin-bottom: 16rpx;
-  padding: 24rpx 28rpx;
-  border-radius: 20rpx;
-  background: var(--color-card);
+  width: 100%;
+  aspect-ratio: 1;
+  animation: rise 180ms var(--ease-out) backwards;
 }
 
-.ready {
-  border-left: 8rpx solid var(--color-ready);
+.lift {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--color-line);
+  border-radius: 24rpx;
+  border-bottom-width: 4rpx;
+  background: var(--color-bg);
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: transform 180ms var(--ease-out);
 }
 
-.almost {
-  border-left: 8rpx solid var(--color-almost);
+.ready .lift {
+  border-bottom-color: var(--color-ready);
 }
 
-.head {
+.almost .lift {
+  border-bottom-color: var(--color-almost);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover .lift {
+    transform: translateY(-8rpx);
+  }
+}
+
+.card:active .lift {
+  transform: scale(0.97);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16rpx;
+  box-sizing: border-box;
 }
 
 .name {
+  display: -webkit-box;
+  overflow: hidden;
   color: var(--color-text);
-  font-size: 32rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
-.source {
-  color: var(--color-muted);
-  font-size: 24rpx;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  margin-top: 16rpx;
-}
-
-.chip {
-  padding: 8rpx 16rpx;
-  border-radius: 999rpx;
-  background: var(--color-chip);
+.missing {
+  display: block;
+  overflow: hidden;
+  margin-top: 8rpx;
   color: var(--color-almost);
-  font-size: 24rpx;
+  font-size: 22rpx;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 </style>

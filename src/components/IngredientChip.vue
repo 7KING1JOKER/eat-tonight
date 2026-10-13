@@ -19,22 +19,38 @@ const emit = defineEmits<{
 <style scoped>
 .chip {
   display: inline-flex;
-  padding: 12rpx 28rpx;
-  border-radius: 999rpx;
-  background: var(--color-chip);
-  transition: background-color 0.15s linear;
+  padding: 16rpx 24rpx;
+  border: 1px solid var(--color-line);
+  border-radius: 24rpx;
+  background: var(--color-bg);
+  transition:
+    transform 160ms var(--ease-out),
+    background-color 0.15s linear,
+    border-color 0.15s linear;
+}
+
+.chip:active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip:not(.selected):hover {
+    border-color: var(--color-earth);
+  }
 }
 
 .name {
-  font-size: 28rpx;
+  font-size: 30rpx;
   color: var(--color-text);
+  transition: color 0.15s linear;
 }
 
 .selected {
+  border-color: var(--color-ready);
   background: var(--color-ready);
 }
 
 .selected .name {
-  color: #fff;
+  color: var(--color-on-ready);
 }
 </style>
