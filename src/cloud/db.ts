@@ -1,4 +1,4 @@
-import type { CustomIngredient, Ingredient, Recipe, RecipeSource } from '@/types/eat'
+import type { CustomIngredient, Ingredient, Recipe, RecipeCredit, RecipeItem, RecipeSource } from '@/types/eat'
 import { hasCloudEnv } from './env'
 
 /** 云上一条文档的字段。只列本文件会读到的键，没有的字段都是可选。这是编译期类型，里面不存数据。 */
@@ -10,6 +10,11 @@ interface CloudDoc {
   need?: string[]
   steps?: string[]
   source?: RecipeSource
+  summary?: string
+  servings?: string
+  note?: string
+  items?: RecipeItem[]
+  credit?: RecipeCredit
   have?: string[]
   custom?: CustomIngredient[]
   ownerId?: string
@@ -30,8 +35,15 @@ interface CloudQuery {
  * `database().collection(集合名)` 返回的一张集合，例如 ingredients、fridges。
  * 只声明本文件用到的方法，让后面的调用通过类型检查。运行时仍是微信云数据库，这个接口不代替真库。
  */
+interface CloudPage {
+  skip(n: number): CloudPage
+  limit(n: number): CloudPage
+  get(): Promise<{ data: CloudDoc[] }>
+}
+
 interface CloudCollection {
-  limit(n: number): { get(): Promise<{ data: CloudDoc[] }> }
+  limit(n: number): CloudPage
+  skip(n: number): CloudPage
   doc(id: string): CloudQuery
   where(query: Record<string, unknown>): CloudCollection
   add(options: { data: Record<string, unknown> }): Promise<unknown>
@@ -52,10 +64,23 @@ function database(): WxDatabase {
   return db
 }
 
-/** 官方食材全量读取。集合不大，不分页。 */
+/** 小程序端单次最多取 20 条，这里翻页读完。 */
+async function fetchAll(name: string): Promise<CloudDoc[]> {
+  const pageSize = 20
+  const rows: CloudDoc[] = []
+  for (let skip = 0; skip < 5000; skip += pageSize) {
+    const res = await database().collection(name).skip(skip).limit(pageSize).get()
+    const batch = res.data ?? []
+    rows.push(...batch)
+    if (batch.length < pageSize) break
+  }
+  return rows
+}
+
+/** 官方食材全量读取。 */
 export async function fetchIngredients(): Promise<Ingredient[]> {
-  const res = await database().collection('ingredients').limit(100).get()
-  return res.data
+  const res = await fetchAll('ingredients')
+  return res
     .filter((row) => row.id && row.name)
     .map((row) => ({
       id: String(row.id),
@@ -69,8 +94,8 @@ export async function fetchIngredients(): Promise<Ingredient[]> {
  * 空 need 留给 matchRecipes 丢掉，这里不改写规则。
  */
 export async function fetchOfficialRecipes(): Promise<Recipe[]> {
-  const res = await database().collection('recipes').limit(100).get()
-  return res.data
+  const res = await fetchAll('recipes')
+  return res
     .filter((row) => row.id && row.name)
     .map((row) => ({
       id: String(row.id),
@@ -78,7 +103,19 @@ export async function fetchOfficialRecipes(): Promise<Recipe[]> {
       need: row.need ?? [],
       steps: row.steps ?? [],
       source: 'official' as const,
+      ...citedFields(row),
     }))
+}
+
+/** 云文档里多出来的出处和用料。没有这些字段时不补空对象。 */
+function citedFields(row: CloudDoc): Partial<Recipe> {
+  const extra: Partial<Recipe> = {}
+  if (row.summary) extra.summary = row.summary
+  if (row.servings) extra.servings = row.servings
+  if (row.note) extra.note = row.note
+  if (row.items?.length) extra.items = row.items
+  if (row.credit?.url && row.credit.site && row.credit.recipeBy && row.credit.license) extra.credit = row.credit
+  return extra
 }
 
 /** 读取某个用户的冰箱。文档不存在时抛错，调用方保留本地勾选。 */

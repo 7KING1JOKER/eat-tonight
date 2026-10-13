@@ -19,11 +19,10 @@ const chicken: Recipe = {
 }
 
 describe('matchRecipes', () => {
-  it('have 为空且缺 2 样时进 almost，不是两组都空', () => {
-    const r = matchRecipes([], [tomatoEgg])
+  it('冰箱里没有这道菜的任何食材时，不进还差', () => {
+    const r = matchRecipes(['passion'], [tomatoEgg])
     expect(r.ready).toEqual([])
-    expect(r.almost).toHaveLength(1)
-    expect(r.almost[0].missing).toEqual(['egg', 'tomato'])
+    expect(r.almost).toEqual([])
   })
 
   it('全齐进 ready', () => {
@@ -32,15 +31,21 @@ describe('matchRecipes', () => {
     expect(r.almost).toEqual([])
   })
 
-  it('缺 2 样进 almost 并带 missing', () => {
-    const r = matchRecipes([], [tomatoEgg])
-    expect(r.almost[0].missing).toEqual(['egg', 'tomato'])
+  it('已经有一样、还缺 1 样时进 almost', () => {
+    const r = matchRecipes(['egg'], [tomatoEgg])
+    expect(r.almost.map((x) => x.id)).toEqual(['r1'])
+    expect(r.almost[0].missing).toEqual(['tomato'])
   })
 
   it('缺 3 样不出现', () => {
     const r = matchRecipes([], [chicken])
     expect(r.ready).toEqual([])
     expect(r.almost).toEqual([])
+  })
+
+  it('三样里已有一样、还缺两样时进 almost', () => {
+    const r = matchRecipes(['wing'], [chicken])
+    expect(r.almost[0].missing).toEqual(['cola', 'soy'])
   })
 
   it('空 need 丢弃', () => {

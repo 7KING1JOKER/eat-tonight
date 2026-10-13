@@ -49,6 +49,16 @@
 			]
 		}
 	],
+	"preloadRule": {
+		"pages/eat/index": {
+			"network": "all",
+			"packages": ["pages/detail"]
+		},
+		"pages/mine/index": {
+			"network": "all",
+			"packages": ["pages/privacy", "pages/detail"]
+		}
+	},
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
 		"navigationBarTitleText": "uni-app",

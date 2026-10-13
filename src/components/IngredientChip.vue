@@ -22,6 +22,7 @@ const emit = defineEmits<{
   padding: 12rpx 28rpx;
   border-radius: 999rpx;
   background: var(--color-chip);
+  transition: background-color 0.15s linear;
 }
 
 .name {

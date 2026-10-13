@@ -1,5 +1,6 @@
 <template>
   <view class="empty">
+    <view class="mark" />
     <text class="title">{{ title }}</text>
   </view>
 </template>
@@ -13,6 +14,14 @@ defineProps<{
 <style scoped>
 .empty {
   padding: 80rpx 32rpx;
+}
+
+.mark {
+  width: 72rpx;
+  height: 72rpx;
+  margin-bottom: 24rpx;
+  border-radius: 50%;
+  background: var(--color-chip);
 }
 
 .title {

@@ -19,20 +19,35 @@ async function fillOfficialFromSeed(): Promise<void> {
 }
 
 /**
- * 打开首页时加载菜谱。先读本地缓存再尝试云。
- * 拉取失败不覆盖已有缓存。缓存和内存都空时，用 readSeedBundle() 填官方菜。
+ * 打开首页时加载菜谱。
+ * 还没配置云环境时，内存里还没有官方菜才读种子并写入缓存。
+ * 已经载入过就直接返回，避免每次切换 Tab 都重写整份菜谱。
+ * 已配置云环境时先读本地缓存再尝试云。拉取失败不覆盖已有缓存。缓存和内存都空时，用种子填上。
  */
 async function load(): Promise<void> {
-  const cachedOfficial = readCache<Recipe[]>(CACHE_KEY_REC)
-  if (cachedOfficial) official.value = cachedOfficial
   const cachedMine = readCache<Recipe[]>(CACHE_KEY_MINE)
   if (cachedMine) mine.value = cachedMine
+
+  if (!hasCloudEnv()) {
+    if (official.value.length > 0) return
+    loading.value = true
+    loadError.value = false
+    try {
+      await fillOfficialFromSeed()
+    } catch {
+      loadError.value = true
+    }
+    loading.value = false
+    return
+  }
+
+  const cachedOfficial = readCache<Recipe[]>(CACHE_KEY_REC)
+  if (cachedOfficial) official.value = cachedOfficial
 
   loading.value = official.value.length === 0
   loadError.value = false
   const session = await login()
   if (!session) {
-    // 未登录时，如果官方菜谱为空，则用种子填充
     if (official.value.length === 0) await fillOfficialFromSeed()
     loading.value = false
     return

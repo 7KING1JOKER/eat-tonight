@@ -29,9 +29,9 @@ function rank(a: Matched, b: Matched): number {
 }
 
 /**
- * 按冰箱现有食材把菜分成两组。缺 0 样进 `ready`，缺 1 或 2 样进 `almost` 并带上 `missing`。
- * 缺 3 样及以上，或 `need` 为空的脏数据，直接丢掉。
- * `have` 为空时不做特判：缺 1～2 样的菜仍会出现在 `almost`。首页「空冰箱不匹配」由调用方决定是否调用。
+ * 按冰箱现有食材把菜分成两组。缺 0 样进 `ready`。
+ * 缺 1 或 2 样、并且冰箱里已经有这道菜的至少一样食材，才进 `almost`。
+ * 缺 3 样及以上、`need` 为空、或冰箱里一样都没有的菜，直接丢掉。
  * @param have 已有食材 id，重复项无影响
  * @param recipes 官方菜和我的菜，调用前拼好
  * @returns `ready` 今晚能做，`almost` 还差 1～2 样
@@ -47,9 +47,10 @@ export function matchRecipes(
     if (recipe.need.length === 0) continue
     const missing = missingOf(recipe.need, haveSet)
     const n = missing.length
+    const owned = recipe.need.length - n
     const row: Matched = { ...recipe, missing }
     if (n === 0) ready.push(row)
-    else if (n === 1 || n === 2) almost.push(row)
+    else if ((n === 1 || n === 2) && owned >= 1) almost.push(row)
   }
   ready.sort(rank)
   almost.sort(rank)

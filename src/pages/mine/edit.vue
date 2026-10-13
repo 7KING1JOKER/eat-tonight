@@ -2,19 +2,7 @@
   <view class="page">
     <input v-model="name" class="input" placeholder="菜名" />
 
-    <view v-for="group in groups" :key="group.name" class="group">
-      <text class="group-name">{{ group.name }}</text>
-      <view class="chips">
-        <IngredientChip
-          v-for="item in group.items"
-          :key="item.id"
-          :id="item.id"
-          :name="item.name"
-          :selected="need.includes(item.id)"
-          @toggle="toggleNeed"
-        />
-      </view>
-    </view>
+    <IngredientGroups :selected="need" @toggle="toggleNeed" />
 
     <view v-if="custom.length" class="group">
       <text class="group-name">自定义</text>
@@ -36,29 +24,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import IngredientChip from '@/components/IngredientChip.vue'
+import IngredientGroups from '@/components/IngredientGroups.vue'
 import { useFridge } from '@/composables/useFridge'
 import { useRecipes } from '@/composables/useRecipes'
 
-const { ingredients, custom, load: loadFridge } = useFridge()
+const { custom, load: loadFridge } = useFridge()
 const { mine, load: loadRecipes, saveMine } = useRecipes()
 
 const editingId = ref('')
 const name = ref('')
 const need = ref<string[]>([])
 const stepsText = ref('')
-
-const groups = computed(() => {
-  const map = new Map<string, { id: string; name: string }[]>()
-  for (const item of ingredients.value) {
-    const list = map.get(item.group) ?? []
-    list.push({ id: item.id, name: item.name })
-    map.set(item.group, list)
-  }
-  return [...map.entries()].map(([groupName, items]) => ({ name: groupName, items }))
-})
 
 onLoad((query) => {
   void prepare(String(query?.id ?? ''))

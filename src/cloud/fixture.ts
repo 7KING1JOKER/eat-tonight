@@ -1,4 +1,4 @@
-import type { Ingredient, Recipe } from '@/types/eat'
+import type { Ingredient, Recipe, RecipeCredit, RecipeItem } from '@/types/eat'
 import ingredientsJson from '../../data/ingredients.json'
 import recipesJson from '../../data/recipes.json'
 
@@ -7,6 +7,11 @@ interface SeedRecipe {
   name: string
   need: string[]
   steps: string[]
+  summary?: string
+  servings?: string
+  note?: string
+  items?: RecipeItem[]
+  credit?: RecipeCredit
 }
 
 /**

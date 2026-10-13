@@ -20,6 +20,7 @@ uni-page-body {
   background: var(--color-bg);
   color: var(--color-text);
   font-size: 28rpx;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 html,

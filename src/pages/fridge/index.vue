@@ -2,19 +2,7 @@
   <view class="page">
     <view class="count">已选 {{ have.length }}</view>
 
-    <view v-for="group in groups" :key="group.name" class="group">
-      <text class="group-name">{{ group.name }}</text>
-      <view class="chips">
-        <IngredientChip
-          v-for="item in group.items"
-          :key="item.id"
-          :id="item.id"
-          :name="item.name"
-          :selected="have.includes(item.id)"
-          @toggle="toggle"
-        />
-      </view>
-    </view>
+    <IngredientGroups :selected="have" @toggle="toggle" />
 
     <view v-if="custom.length" class="group">
       <text class="group-name">自定义</text>
@@ -44,24 +32,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import IngredientChip from '@/components/IngredientChip.vue'
+import IngredientGroups from '@/components/IngredientGroups.vue'
 import { useFridge } from '@/composables/useFridge'
 
-const { have, ingredients, custom, toggle, addCustom, load } = useFridge()
+const { have, custom, toggle, addCustom, load } = useFridge()
 const draft = ref('')
-
-// 根据ingredient的group分组
-const groups = computed(() => {
-  const map = new Map<string, { id: string; name: string }[]>()
-  for (const item of ingredients.value) {
-    const list = map.get(item.group) ?? []
-    list.push({ id: item.id, name: item.name })
-    map.set(item.group, list)
-  }
-  return [...map.entries()].map(([name, items]) => ({ name, items }))
-})
 
 onShow(() => {
   void load()
@@ -77,7 +55,7 @@ function submitCustom() {
 
 <style scoped>
 .page {
-  padding: 32rpx 32rpx 48rpx;
+  padding: 32rpx 32rpx calc(48rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
