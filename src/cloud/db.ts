@@ -1,4 +1,5 @@
 import type { CustomIngredient, Ingredient, Recipe, RecipeCredit, RecipeItem, RecipeSource } from '@/types/eat'
+import type { JournalEvent } from '@/utils/journal'
 import { hasCloudEnv } from './env'
 
 /** 云上一条文档的字段。只列本文件会读到的键，没有的字段都是可选。这是编译期类型，里面不存数据。 */
@@ -18,6 +19,7 @@ interface CloudDoc {
   have?: string[]
   custom?: CustomIngredient[]
   ownerId?: string
+  events?: JournalEvent[]
 }
 
 /**
@@ -157,6 +159,7 @@ export async function fetchMyRecipes(openid: string): Promise<Recipe[]> {
       need: row.need ?? [],
       steps: row.steps ?? [],
       source: 'mine' as const,
+      ...citedFields(row),
     }))
 }
 
@@ -171,6 +174,11 @@ export async function upsertMyRecipe(recipe: Recipe & { ownerId: string }): Prom
     steps: recipe.steps,
     source: 'mine' as const,
     ownerId: recipe.ownerId,
+    summary: recipe.summary ?? '',
+    servings: recipe.servings ?? '',
+    note: recipe.note ?? '',
+    items: recipe.items ?? [],
+    credit: recipe.credit ?? { site: '', recipeBy: '', url: '', license: '' },
   }
   const existing = found.data[0]
   if (existing?._id) {
@@ -178,6 +186,27 @@ export async function upsertMyRecipe(recipe: Recipe & { ownerId: string }): Prom
     return
   }
   await col.add({ data })
+}
+
+/** 读取某个用户的习惯记录。文档不存在时抛错，调用方保留本地记录。 */
+export async function getJournal(openid: string): Promise<JournalEvent[]> {
+  const res = await database().collection('journals').doc(openid).get()
+  const doc = (Array.isArray(res.data) ? res.data[0] : res.data) ?? {}
+  return doc.events ?? []
+}
+
+/**
+ * 覆盖写入习惯记录。文档不存在时改为 set。
+ * 集合与冰箱相同，只有本人可读写。不在这里创建集合。
+ */
+export async function setJournal(openid: string, events: JournalEvent[]): Promise<void> {
+  const doc = database().collection('journals').doc(openid)
+  const data = { events }
+  try {
+    await doc.update({ data })
+  } catch {
+    await doc.set({ data })
+  }
 }
 
 /** 按业务 id 删除我的菜。删不到文档时抛错。 */

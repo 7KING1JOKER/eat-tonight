@@ -77,6 +77,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import RichLine from '@/components/RichLine.vue'
 import { useFridge } from '@/composables/useFridge'
 import { useRecipes } from '@/composables/useRecipes'
+import { useJournal } from '@/composables/useJournal'
 import type { Matched, RecipeSource } from '@/types/eat'
 import { hasInlineText } from '@/utils/inlineMarkdown'
 import { CACHE_KEY_DETAIL, readCache } from '@/utils/storage'
@@ -84,6 +85,7 @@ import { CACHE_KEY_DETAIL, readCache } from '@/utils/storage'
 const { have, ingredients, custom, load } = useFridge()
 const { official, mine, load: loadRecipes } = useRecipes()
 const recipe = ref<Matched | null>(null)
+const { recordJournal } = useJournal()
 
 const ingredientName = computed(() => {
   const map = new Map<string, string>()
@@ -153,8 +155,17 @@ function openCredit(url: string) {
 onLoad((query) => {
   const id = String(query?.id ?? '')
   const source = String(query?.source ?? 'official') as RecipeSource
+  let noted = false
+  function noteView(name: string) {
+    if(noted || !id || !name) return
+    noted = true
+    recordJournal({ at: Date.now(), kind: 'view', id, name, source })
+  }
   const cached = readCache<Matched>(CACHE_KEY_DETAIL)
-  if (cached && cached.id === id && cached.source === source) recipe.value = cached
+  if (cached && cached.id === id && cached.source === source) {
+    recipe.value = cached
+    noteView(cached.name)
+  }
   void (async () => {
     await Promise.all([load(), loadRecipes()])
     if (recipe.value?.id === id && recipe.value.source === source) return
@@ -167,6 +178,7 @@ onLoad((query) => {
       source,
       missing: found.need.filter((itemId) => !owned.has(itemId)),
     }
+    noteView(found.name)
   })()
 })
 </script>

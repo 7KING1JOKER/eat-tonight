@@ -6,11 +6,16 @@ import { hasCloudEnv } from '@/cloud/env'
 import { readSeedBundle } from '@/cloud/fixture'
 import { CACHE_KEY_FRIDGE, CACHE_KEY_ING, readCache, writeCache } from '@/utils/storage'
 
+import { useJournal } from '@/composables/useJournal'
+
+
 /** 模块顶层一份状态，首页和冰箱页看到的是同一份 have。 */
 const have = ref<string[]>([])  // 冰箱里的食材
 const ingredients = ref<Ingredient[]>([])  // 官方食材
 const custom = ref<CustomIngredient[]>([])  // 自定义食材
 const pendingSync = ref(false) // 用来标记是否写上云失败了
+
+const { recordJournal } = useJournal()
 
 function snapshot(): FridgeState {
   return {
@@ -53,23 +58,35 @@ async function sync(): Promise<void> {
   }
 }
 
+/** 根据 id 获取食材名。官方食材 id 是 `o_` 开头，自定义食材 id 是 `c_` 开头但有随机字符。 */
+function getIngredientName(id: string): string {
+  return id.startsWith('o_') ? id.slice(2) : custom.value.find((item) => item.id === id)?.name ?? ''
+}
+
+/** 记一次冰箱勾选。水、空名字不记。先改完 have，再调用。 */
+function noteFridge(id: string, delta: 'on' | 'off', name = getIngredientName(id)): void {
+  if (!name || name === '水' || id === 'o_水') return
+  void recordJournal({ at: Date.now(), kind: 'fridge', id, name, delta })
+}
+
 /**
  * 点选食材。已在 have 里就去掉，否则加进去。先改本地，再 sync。
  * @param id 官方食材 id，或 `c_` 开头的自定义 id
  */
 function toggle(id: string): void {
-  if (have.value.includes(id)) {
-    have.value = have.value.filter(item => item !== id)
-  } else {
-    have.value.push(id)
-  }
+  const turningOn = !have.value.includes(id)
+  if (turningOn) have.value.push(id)
+  else have.value = have.value.filter((item) => item !== id)
+  noteFridge(id, turningOn ? 'on' : 'off')
   sync()
 }
 
 /** 取消全部勾选。自定义食材名字还留着，只是不再算进冰箱。 */
 function clearHave(): void {
   if (have.value.length === 0) return
+  const ids = have.value.slice()
   have.value = []
+  for (const id of ids) noteFridge(id, 'off')
   void sync()
 }
 
@@ -101,6 +118,7 @@ function addCustom(name: string): void {
   const id = nextCustomId()
   custom.value.push({ id, name: trimmed })
   have.value.push(id)
+  noteFridge(id, 'on', trimmed)
   sync()
 }
 

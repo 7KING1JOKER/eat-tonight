@@ -1,15 +1,18 @@
 import { ref } from 'vue'
-import type { Recipe } from '@/types/eat'
+import type { Recipe, RecipeCredit, RecipeItem } from '@/types/eat'
 import { login } from '@/cloud/auth'
 import { fetchMyRecipes, fetchOfficialRecipes, upsertMyRecipe, removeMyRecipe } from '@/cloud/db'
 import { readSeedBundle } from '@/cloud/fixture'
 import { CACHE_KEY_MINE, CACHE_KEY_REC, readCache, writeCache } from '@/utils/storage'
 import { hasCloudEnv } from '@/cloud/env'
+import { useJournal } from '@/composables/useJournal'
 
 const official = ref<Recipe[]>([]) // 官方菜谱
 const mine = ref<Recipe[]>([]) // 我的菜谱
 const loading = ref(false) // 官方菜谱拉取状态
 const loadError = ref(false) // 官方菜谱拉取错误状态
+
+const { recordJournal } = useJournal()
 
 /** 云失败且当前没有官方菜时，用种子填上，避免页面空白。 */
 async function fillOfficialFromSeed(): Promise<void> {
@@ -91,18 +94,20 @@ function rememberMine(recipe: Recipe): void {
  * 云环境已配置且有 openid 时先 upsertMyRecipe；请求失败不改 mine。
  * 成功后再按 id 替换本地列表。步骤可以为空，最多 5 条。
  */
-async function saveMine(input: { id?: string; name: string; need: string[]; steps: string[] }): Promise<void> {
+async function saveMine(input: {
+  id?: string
+  name: string
+  need: string[]
+  steps: string[]
+  summary?: string
+  servings?: string
+  note?: string
+  items?: RecipeItem[]
+  credit?: RecipeCredit
+}): Promise<void> {
   const name = input.name.trim()
   const need = input.need.map((item) => item.trim()).filter((item) => item.length > 0)
   const steps = input.steps.map((item) => item.trim()).filter((item) => item.length > 0)
-
-  if (name.length === 0 || need.length < 1) {
-    throw new Error('菜名不能为空，且至少需要一样食材')
-  }
-  if (steps.length > 5) {
-    throw new Error('步骤最多 5 条')
-  }
-
   const recipe: Recipe = {
     id: input.id || `m_${Date.now()}`,
     name,
@@ -110,14 +115,37 @@ async function saveMine(input: { id?: string; name: string; need: string[]; step
     steps,
     source: 'mine',
   }
+  const summary = input.summary?.trim()
+  const servings = input.servings?.trim()
+  const note = input.note?.trim()
+  if (summary) recipe.summary = summary
+  if (servings) recipe.servings = servings
+  if (note) recipe.note = note
+  if (input.items?.length) recipe.items = input.items
+  if (input.credit?.url) recipe.credit = input.credit
+  
+  // 是否是新创建的菜谱。
+  const creating = !input.id
+  function rememberAndNote() {
+    rememberMine(recipe)
+    if(!creating) return
+    recordJournal({ at: Date.now(), kind: 'create', id: recipe.id, name: recipe.name, source: 'mine' })
+  }
+
+  if (name.length === 0 || need.length < 1) {
+    throw new Error('菜名不能为空，且至少需要一样食材')
+  }
+  if (steps.length > 5) {
+    throw new Error('步骤最多 5 条')
+  }
   const session = await login()
   if (!hasCloudEnv() || !session) {
-    rememberMine(recipe)
+    rememberAndNote()
     return
   }
   // 更新云端
   await upsertMyRecipe({ ...recipe, ownerId: session.openid })
-  rememberMine(recipe)
+  rememberAndNote()
 }
 
 /**

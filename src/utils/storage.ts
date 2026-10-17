@@ -4,6 +4,7 @@ export const CACHE_KEY_FRIDGE = 'eat.fridge' // 冰箱缓存键
 export const CACHE_KEY_MINE = 'eat.myRecipes' // 我的菜谱缓存键
 export const CACHE_KEY_DETAIL = 'eat.detail' // 菜谱详情缓存键
 export const CACHE_KEY_ANON = 'eat.anonId' // 匿名用户 ID 缓存键
+export const CACHE_KEY_JOURNAL = 'eat.journal' // 习惯记录缓存键
 
 /**
  * 读本地缓存。统一按 JSON 字符串存放，也兼容运行时已经反序列化过的值。

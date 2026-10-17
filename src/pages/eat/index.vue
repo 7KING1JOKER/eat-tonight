@@ -1,17 +1,54 @@
 <template>
   <view class="page">
-    <SkeletonList v-if="showSkeleton" />
+    <view class="search-box">
+      <AppIcon name="search" />
+      <input
+        v-model="keyword"
+        class="search"
+        placeholder="搜索菜名或食材"
+        confirm-type="search"
+      />
+    </view>
+    <view class="ledger">
+      <view class="ledger-link" @tap="openCreate">
+        <AppIcon name="write" />
+        <text class="ledger-text">记下这道菜</text>
+      </view>
+      <text class="ledger-slash">/</text>
+      <view class="ledger-link" :class="{ on: showingMine }" @tap="showingMine = !showingMine">
+        <AppIcon :name="showingMine ? 'tab-eat' : 'mine'" />
+        <text class="ledger-text">{{ showingMine ? '今晚吃啥' : '我的菜' }}</text>
+      </view>
+    </view>
+
+    <template v-if="showingMine">
+      <EmptyState v-if="myListed.length === 0" :title="query ? '没有找到这道菜' : '还没有自己的菜'" />
+      <view v-else>
+        <view
+          v-for="(item, index) in myListed"
+          :key="item.id"
+          class="mine-row"
+          :style="rowDelay(index)"
+          @tap="openMineDetail(item)"
+        >
+          <view class="mine-copy">
+            <text class="mine-name">{{ item.name }}</text>
+            <text class="mine-meta">用了 {{ item.need.length }} 样</text>
+          </view>
+          <view class="mine-actions">
+            <view class="mine-action" @tap.stop="openEdit(item.id)">
+              <AppIcon name="edit" />
+            </view>
+            <view class="mine-action" @tap.stop="confirmRemoveMine(item)">
+              <AppIcon name="delete" />
+            </view>
+          </view>
+        </view>
+      </view>
+    </template>
+    <SkeletonList v-else-if="showSkeleton" />
     <EmptyState v-else-if="noRecipes" title="菜谱暂时没有" />
     <template v-else>
-      <view class="search-box">
-        <AppIcon name="search" />
-        <input
-          v-model="keyword"
-          class="search"
-          placeholder="搜索菜名或食材"
-          confirm-type="search"
-        />
-      </view>
       <template v-if="query">
         <CategoryFilters :options="categoryOptions" :current="category" @pick="pickCategory" />
         <EmptyState v-if="searchFiltered.length === 0" title="没有找到这道菜" />
@@ -102,10 +139,11 @@ import { CACHE_KEY_DETAIL, writeCache } from '@/utils/storage'
 const PAGE_SIZE = 8
 
 const { have, ingredients, custom, load: loadFridge } = useFridge()
-const { official, mine, loading, loadError, load: loadRecipes } = useRecipes()
+const { official, mine, loading, loadError, load: loadRecipes, removeMine } = useRecipes()
 const { ready, almost } = useMatch()
 const category = ref('全部')
 const keyword = ref('')
+const showingMine = ref(false)
 const readyPage = ref(1)
 const almostPage = ref(1)
 const searchPage = ref(1)
@@ -142,6 +180,13 @@ const readyPageItems = computed(() => slicePage(readyFiltered.value, readyPage.v
 const almostPageItems = computed(() => slicePage(almostFiltered.value, almostPage.value))
 const searchFiltered = computed(() => named.value.filter(inCategory))
 const searchPageItems = computed(() => slicePage(searchFiltered.value, searchPage.value))
+const myListed = computed(() => {
+  const text = query.value
+  return mine.value
+    .filter((item) => !text || item.name.includes(text) || recipeHasIngredient(item, text))
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh'))
+})
 
 const ingredientName = computed(() => {
   const map = new Map<string, string>()
@@ -206,6 +251,35 @@ function navigateToDetail(item: Matched) {
   })
 }
 
+function openCreate() {
+  uni.navigateTo({ url: '/pages/mine/edit' })
+}
+
+function openEdit(id: string) {
+  uni.navigateTo({ url: `/pages/mine/edit?id=${id}` })
+}
+
+function openMineDetail(item: Recipe) {
+  navigateToDetail(asMatched(item))
+}
+
+function confirmRemoveMine(item: Recipe) {
+  uni.showModal({
+    title: '删除这道菜',
+    content: item.name,
+    success(res) {
+      if (!res.confirm) return
+      void removeMine(item.id).catch(() => {
+        uni.showToast({ title: '删除失败', icon: 'none' })
+      })
+    },
+  })
+}
+
+function rowDelay(index: number) {
+  return `animation-delay:${index * 40}ms`
+}
+
 watch(categoryOptions, (options) => {
   if (!options.includes(category.value)) pickCategory('全部')
 })
@@ -254,6 +328,130 @@ onShow(() => {
   background: transparent;
   color: var(--color-text);
   font-size: 30rpx;
+}
+
+.ledger {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 32rpx;
+}
+
+.ledger-link {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  transition: transform 180ms var(--ease-out);
+}
+
+.ledger-link:active {
+  transform: scale(0.98);
+}
+
+.ledger-text {
+  color: var(--color-earth);
+  font-size: 26rpx;
+  letter-spacing: 0.06em;
+  transition: color 180ms var(--ease-out);
+}
+
+.ledger-link.on .ledger-text {
+  color: var(--color-ready);
+}
+
+.ledger-slash {
+  color: var(--color-text);
+  font-size: 32rpx;
+  line-height: 1;
+}
+
+.mine-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 28rpx 0;
+  border-bottom: 1px solid var(--color-line);
+  animation: rise 180ms var(--ease-out) backwards;
+}
+
+.mine-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.mine-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8rpx;
+  opacity: 1;
+}
+
+.mine-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  transition: transform 180ms var(--ease-out);
+}
+
+.mine-action:active {
+  transform: scale(0.96);
+}
+
+.mine-row:active {
+  transform: scale(0.98);
+}
+
+.mine-name {
+  display: block;
+  color: var(--color-text);
+  font-size: 40rpx;
+  line-height: 1.3;
+}
+
+.mine-meta {
+  display: block;
+  margin-top: 8rpx;
+  color: var(--color-muted);
+  font-size: 24rpx;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ledger-link:hover .ledger-text {
+    color: var(--color-text);
+  }
+
+  .ledger-link.on:hover .ledger-text {
+    color: var(--color-ready);
+  }
+
+  .mine-actions {
+    opacity: 0;
+    transform: translateX(8rpx);
+    transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+  }
+
+  .mine-row:hover .mine-actions {
+    opacity: 1;
+    transform: none;
+  }
+
+  .mine-row:hover .mine-name {
+    color: var(--color-earth);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16rpx);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .group {
