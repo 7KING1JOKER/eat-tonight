@@ -20,6 +20,7 @@ interface CloudDoc {
   custom?: CustomIngredient[]
   ownerId?: string
   events?: JournalEvent[]
+  fileID?: string
 }
 
 /**
@@ -207,6 +208,17 @@ export async function setJournal(openid: string, events: JournalEvent[]): Promis
   } catch {
     await doc.set({ data })
   }
+}
+
+/**
+ * 读取封面文件编号。集合 `covers` 的字段是菜谱 `id` 和云存储 `fileID`。
+ * 登录可读，这里不写入。集合不存在时抛错，调用方改用空表。
+ */
+export async function fetchCovers(): Promise<{ id: string; fileID: string }[]> {
+  const res = await fetchAll('covers')
+  return res
+    .filter((row) => row.id && row.fileID)
+    .map((row) => ({ id: String(row.id), fileID: String(row.fileID) }))
 }
 
 /** 按业务 id 删除我的菜。删不到文档时抛错。 */

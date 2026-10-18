@@ -5,11 +5,14 @@
     :style="{ animationDelay: `${delay}ms` }"
     @tap.stop="emit('open')"
   >
-    <view class="lift">
-    <view class="face">
-      <view class="name">{{ name }}</view>
-      <view v-if="missing.length" class="missing">{{ missing.join('、') }}</view>
-    </view>
+    <view class="lift" :class="{ pictured: cover }">
+      <view v-if="cover" class="photo-box">
+        <image class="photo" :src="cover" mode="aspectFill" />
+      </view>
+      <view class="face">
+        <view class="name">{{ name }}</view>
+        <view v-if="missing.length" class="missing">{{ missing.join('、') }}</view>
+      </view>
     </view>
   </view>
 </template>
@@ -19,9 +22,10 @@ withDefaults(
   defineProps<{
     name: string
     missing: string[]
+    cover?: string
     delay?: number
   }>(),
-  { delay: 0 },
+  { cover: '', delay: 0 },
 )
 
 const emit = defineEmits<{
@@ -67,14 +71,55 @@ const emit = defineEmits<{
   transform: scale(0.97);
 }
 
+.pictured {
+  display: flex;
+  flex-direction: column;
+}
+
+.photo-box {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.photo {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
 .face {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   padding: 16rpx;
   box-sizing: border-box;
+}
+
+.pictured .face {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  flex: none;
+  border-top: 1px solid var(--color-line);
+  background: var(--color-bg);
+}
+
+.pictured .name {
+  line-clamp: 1;
+  -webkit-line-clamp: 1;
 }
 
 .name {
@@ -86,6 +131,7 @@ const emit = defineEmits<{
   line-height: 1.3;
   white-space: normal;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
 }
 

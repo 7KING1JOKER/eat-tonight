@@ -58,6 +58,7 @@
               <RecipeCard
                 :name="item.name"
                 :missing="namesOf(item.missing)"
+                :cover="coverOf(item.id)"
                 :delay="index * 40"
                 @open="navigateToDetail(item)"
               />
@@ -83,6 +84,7 @@
               <RecipeCard
                 :name="item.name"
                 :missing="namesOf(item.missing)"
+                :cover="coverOf(item.id)"
                 :delay="index * 40"
                 @open="navigateToDetail(item)"
               />
@@ -102,6 +104,7 @@
               <RecipeCard
                 :name="item.name"
                 :missing="namesOf(item.missing)"
+                :cover="coverOf(item.id)"
                 :delay="index * 40"
                 @open="navigateToDetail(item)"
               />
@@ -129,10 +132,13 @@ import EmptyState from '@/components/EmptyState.vue'
 import Pager from '@/components/Pager.vue'
 import RecipeCard from '@/components/RecipeCard.vue'
 import SkeletonList from '@/components/SkeletonList.vue'
+import { fetchCovers } from '@/cloud/db'
+import { hasCloudEnv } from '@/cloud/env'
 import { useFridge } from '@/composables/useFridge'
 import { useMatch } from '@/composables/useMatch'
 import { useRecipes } from '@/composables/useRecipes'
 import type { Matched, Recipe } from '@/types/eat'
+import { coverFileId } from '@/utils/covers'
 import { CATEGORY_ORDER, recipeCategory } from '@/utils/recipeCategory'
 import { CACHE_KEY_DETAIL, writeCache } from '@/utils/storage'
 
@@ -147,6 +153,7 @@ const showingMine = ref(false)
 const readyPage = ref(1)
 const almostPage = ref(1)
 const searchPage = ref(1)
+const coverMap = ref<Record<string, string>>({})
 
 const showSkeleton = computed(() => loading.value && official.value.length === 0 && mine.value.length === 0)
 const noRecipes = computed(() => loadError.value && official.value.length === 0 && mine.value.length === 0)
@@ -222,6 +229,25 @@ function asMatched(recipe: Recipe): Matched {
 function slicePage(list: Matched[], page: number): Matched[] {
   const start = (page - 1) * PAGE_SIZE
   return list.slice(start, start + PAGE_SIZE)
+}
+
+function coverOf(id: string): string {
+  return coverFileId(id, coverMap.value)
+}
+
+async function loadCovers() {
+  if (!hasCloudEnv()) {
+    coverMap.value = {}
+    return
+  }
+  try {
+    const rows = await fetchCovers()
+    const next: Record<string, string> = {}
+    for (const row of rows) next[row.id] = row.fileID
+    coverMap.value = next
+  } catch {
+    coverMap.value = {}
+  }
 }
 
 function namesOf(ids: string[]): string[] {
@@ -302,6 +328,7 @@ watch(searchFiltered, (list) => {
 onShow(() => {
   void loadFridge()
   void loadRecipes()
+  void loadCovers()
 })
 </script>
 
