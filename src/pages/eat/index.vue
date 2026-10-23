@@ -33,6 +33,9 @@
           :style="rowDelay(index)"
           @tap="openMineDetail(item)"
         >
+          <view class="mine-mark">
+            <AppIcon name="mine" :size="40" />
+          </view>
           <view class="mine-copy">
             <text class="mine-name">{{ item.name }}</text>
             <text class="mine-meta">用了 {{ item.need.length }} 样</text>
@@ -61,8 +64,10 @@
                 :name="item.name"
                 :missing="namesOf(item.missing)"
                 :cover="coverOf(item.id)"
+                :marked="item.source === 'mine'"
                 :delay="index * 40"
                 @open="navigateToDetail(item)"
+                @cover-error="dropCover(item.id)"
               />
             </view>
           </view>
@@ -87,8 +92,10 @@
                 :name="item.name"
                 :missing="namesOf(item.missing)"
                 :cover="coverOf(item.id)"
+                :marked="item.source === 'mine'"
                 :delay="index * 40"
                 @open="navigateToDetail(item)"
+                @cover-error="dropCover(item.id)"
               />
             </view>
           </view>
@@ -107,8 +114,10 @@
                 :name="item.name"
                 :missing="namesOf(item.missing)"
                 :cover="coverOf(item.id)"
+                :marked="item.source === 'mine'"
                 :delay="index * 40"
                 @open="navigateToDetail(item)"
+                @cover-error="dropCover(item.id)"
               />
             </view>
           </view>
@@ -255,10 +264,18 @@ async function loadCovers() {
       const url = urls[row.fileID]
       if (url) next[row.id] = url
     }
-    coverMap.value = next
+    if (Object.keys(next).length === 0) return
+    coverMap.value = { ...coverMap.value, ...next }
   } catch {
-    coverMap.value = {}
+    // 换链接失败时留下已经显示的封面，避免整页变成空白。
   }
+}
+
+function dropCover(id: string) {
+  if (!coverMap.value[id]) return
+  const next = { ...coverMap.value }
+  delete next[id]
+  coverMap.value = next
 }
 
 function namesOf(ids: string[]): string[] {
@@ -434,6 +451,17 @@ onShow(() => {
   padding: 28rpx 0;
   border-bottom: 1px solid var(--color-line);
   animation: rise 180ms var(--ease-out) backwards;
+}
+
+.mine-mark {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  background: var(--color-chrome);
 }
 
 .mine-copy {

@@ -101,7 +101,7 @@ describe('summarizeJournal', () => {
     expect(view.days[0]?.on).toEqual(['番茄', '鸡蛋'])
   })
 
-  it('新的日期和最近浏览排在前面，浏览最多留 20 条', () => {
+  it('新的日期和最近浏览排在前面，浏览最多留 8 条', () => {
     const older = at(2026, 10, 15, 12)
     const newer = at(2026, 10, 16, 12)
     const fridge: JournalEvent[] = [
@@ -117,9 +117,33 @@ describe('summarizeJournal', () => {
     }))
     const view = summarizeJournal([...fridge, ...views], newer + 21)
     expect(view.days.map((row) => row.date)).toEqual(['2026-10-16', '2026-10-15'])
-    expect(view.recentViews).toHaveLength(20)
+    expect(view.recentViews).toHaveLength(8)
     expect(view.recentViews[0]?.id).toBe('r-20')
-    expect(view.recentViews[19]?.id).toBe('r-1')
+    expect(view.recentViews[7]?.id).toBe('r-13')
+  })
+
+  it('冰箱只留最近 7 天，写下的菜最多 8 条', () => {
+    const now = at(2026, 10, 20, 12)
+    const fridge: JournalEvent[] = Array.from({ length: 9 }, (_, index) => ({
+      at: at(2026, 10, 12 + index, 8),
+      kind: 'fridge' as const,
+      id: `o_${index}`,
+      name: `食材${index}`,
+      delta: 'on' as const,
+    }))
+    const created: JournalEvent[] = Array.from({ length: 9 }, (_, index) => ({
+      at: now - (9 - index) * 1_000,
+      kind: 'create' as const,
+      id: `m_${index}`,
+      name: `菜${index}`,
+      source: 'mine' as const,
+    }))
+    const view = summarizeJournal([...fridge, ...created], now)
+    expect(view.days).toHaveLength(7)
+    expect(view.days[0]?.date).toBe('2026-10-20')
+    expect(view.days[6]?.date).toBe('2026-10-14')
+    expect(view.created).toHaveLength(8)
+    expect(view.created[0]?.id).toBe('m_8')
   })
 
   it('不修改入参', () => {

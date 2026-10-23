@@ -14,9 +14,9 @@ export interface JournalEvent {
 
 /** `summarizeJournal` 交给「我的」页的五块内容。 */
 export interface JournalView {
-  days: { date: string; on: string[]; off: string[] }[] // 按本地日期分组的勾上与取消，新的日期在前。
-  recentViews: { at: number; id: string; name: string; source?: 'official' | 'mine' }[] // 最近看过的菜，最多 20 条，新的在前。
-  created: { at: number; id: string; name: string }[] // 这 30 天里新建的菜，新的在前。
+  days: { date: string; on: string[]; off: string[] }[] // 最近 7 天的勾上与取消，新的日期在前，每天每侧最多 8 个名字。
+  recentViews: { at: number; id: string; name: string; source?: 'official' | 'mine' }[] // 最近看过的菜，最多 8 条，新的在前。
+  created: { at: number; id: string; name: string }[] // 这 30 天里新建的菜，最多 8 条，新的在前。
   frequentRecipes: { id: string; name: string; count: number }[] // 浏览次数前 3 的菜。
   frequentIngredients: { id: string; name: string; count: number }[] // 勾上次数前 5 的食材。
 }
@@ -70,7 +70,7 @@ function topCounts(events: JournalEvent[], limit: number): JournalView['frequent
  * 只用 `now` 往前 30 天、且不晚于 `now` 的记录。
  * @param events 已按 `at` 从小到大排好的记录
  * @param now 汇总时刻的毫秒时间戳
- * @returns 冰箱按天、最近浏览、新建、常看、常勾
+ * @returns 冰箱最近 7 天（每天勾上、取消各最多 8 个名字）、最近浏览 8 条、新建 8 条、常看 3、常勾 5
  */
 export function summarizeJournal(events: JournalEvent[], now: number): JournalView {
   // 只用 `now` 往前 30 天、且不晚于 `now` 的记录。
@@ -90,11 +90,15 @@ export function summarizeJournal(events: JournalEvent[], now: number): JournalVi
   // 最近看过的菜
   const views = windowed.filter((event) => event.kind === 'view')
   return {
-    days: days.reverse(),
-    recentViews: views.slice(-20).reverse().map(({ at, id, name, source }) => ({ at, id, name, source })),
+    days: days
+      .reverse()
+      .slice(0, 7)
+      .map((row) => ({ ...row, on: row.on.slice(0, 8), off: row.off.slice(0, 8) })),
+    recentViews: views.slice(-8).reverse().map(({ at, id, name, source }) => ({ at, id, name, source })),
     created: windowed
       .filter((event) => event.kind === 'create')
       .reverse()
+      .slice(0, 8)
       .map(({ at, id, name }) => ({ at, id, name })),
     frequentRecipes: topCounts(views, 3),
     frequentIngredients: topCounts(

@@ -1,8 +1,8 @@
 <template>
   <view class="page">
-    <input v-model="name" class="input" placeholder="菜名" />
-    <textarea v-model="summary" class="area" placeholder="简介，可以不写" />
-    <input v-model="servings" class="input" placeholder="一份够几个人吃，可以不写" />
+    <input v-model="name" class="input" :class="{ 'is-focus': focusKey === 'name' }" placeholder="菜名" @focus="focusKey = 'name'" @blur="blurKey('name')" />
+    <textarea v-model="summary" class="area" :class="{ 'is-focus': focusKey === 'summary' }" placeholder="简介，可以不写" @focus="focusKey = 'summary'" @blur="blurKey('summary')" />
+    <input v-model="servings" class="input" :class="{ 'is-focus': focusKey === 'servings' }" placeholder="一份够几个人吃，可以不写" @focus="focusKey = 'servings'" @blur="blurKey('servings')" />
 
     <IngredientGroups :selected="need" @toggle="toggleNeed" />
 
@@ -27,26 +27,26 @@
       <text class="group-name">用量</text>
       <view v-for="id in need" :key="id" class="amount-row">
         <text class="amount-name">{{ ingredientLabel(id) }}</text>
-        <input v-model="amounts[id]" class="amount-input" placeholder="用量" />
+        <input v-model="amounts[id]" class="amount-input" :class="{ 'is-focus': focusKey === `amount:${id}` }" placeholder="用量" @focus="focusKey = `amount:${id}`" @blur="blurKey(`amount:${id}`)" />
       </view>
     </view>
 
     <view class="group">
       <text class="group-name">其他用料</text>
       <view v-for="(item, index) in extras" :key="index" class="extra-row">
-        <input v-model="item.name" class="extra-name" placeholder="名称，如水" />
-        <input v-model="item.amount" class="extra-amount" placeholder="用量" />
+        <input v-model="item.name" class="extra-name" :class="{ 'is-focus': focusKey === `extra-name:${index}` }" placeholder="名称，如水" @focus="focusKey = `extra-name:${index}`" @blur="blurKey(`extra-name:${index}`)" />
+        <input v-model="item.amount" class="extra-amount" :class="{ 'is-focus': focusKey === `extra-amount:${index}` }" placeholder="用量" @focus="focusKey = `extra-amount:${index}`" @blur="blurKey(`extra-amount:${index}`)" />
         <text class="extra-remove" @tap="removeExtra(index)">去掉</text>
       </view>
       <text class="add-extra" @tap="addExtra">加上一样</text>
     </view>
 
-    <textarea v-model="stepsText" class="steps" placeholder="步骤，一行一条，最多 5 条" />
-    <textarea v-model="note" class="area" placeholder="说明，可以不写" />
+    <textarea v-model="stepsText" class="steps" :class="{ 'is-focus': focusKey === 'steps' }" placeholder="步骤，一行一条，最多 5 条" @focus="focusKey = 'steps'" @blur="blurKey('steps')" />
+    <textarea v-model="note" class="area" :class="{ 'is-focus': focusKey === 'note' }" placeholder="说明，可以不写" @focus="focusKey = 'note'" @blur="blurKey('note')" />
 
     <text class="group-name">出处</text>
-    <input v-model="creditSite" class="input" placeholder="来源名称，可以不写" />
-    <input v-model="creditUrl" class="input" placeholder="链接，可以不写" />
+    <input v-model="creditSite" class="input" :class="{ 'is-focus': focusKey === 'credit-site' }" placeholder="来源名称，可以不写" @focus="focusKey = 'credit-site'" @blur="blurKey('credit-site')" />
+    <input v-model="creditUrl" class="input" :class="{ 'is-focus': focusKey === 'credit-url' }" placeholder="链接，可以不写" @focus="focusKey = 'credit-url'" @blur="blurKey('credit-url')" />
 
     <button class="primary" hover-class="none" @tap="submit">保存</button>
     <button v-if="editingId" class="danger" hover-class="none" @tap="confirmRemove">删除</button>
@@ -61,12 +61,13 @@ import IngredientChip from '@/components/IngredientChip.vue'
 import IngredientGroups from '@/components/IngredientGroups.vue'
 import { useFridge } from '@/composables/useFridge'
 import { useRecipes } from '@/composables/useRecipes'
-import type { RecipeCredit, RecipeItem } from '@/types/eat'
+import type { Recipe, RecipeCredit, RecipeItem } from '@/types/eat'
 
 const { custom, ingredients, load: loadFridge } = useFridge()
 const { mine, load: loadRecipes, saveMine, removeMine } = useRecipes()
 
 const editingId = ref('')
+const focusKey = ref('')
 const name = ref('')
 const summary = ref('')
 const servings = ref('')
@@ -84,11 +85,20 @@ onLoad((query) => {
   void prepare(id)
 })
 
+function blurKey(key: string) {
+  if (focusKey.value === key) focusKey.value = ''
+}
+
 async function prepare(id: string) {
-  await Promise.all([loadFridge(), loadRecipes()])
-  if (!id) return
-  const found = mine.value.find((item) => item.id === id)
-  if (!found) return
+  const pending = Promise.all([loadFridge(), loadRecipes()])
+  const had = id ? fill(mine.value.find((item) => item.id === id)) : false
+  await pending
+  if (!id || had) return
+  fill(mine.value.find((item) => item.id === id))
+}
+
+function fill(found: Recipe | undefined): boolean {
+  if (!found) return false
   editingId.value = found.id
   name.value = found.name
   summary.value = found.summary ?? ''
@@ -104,6 +114,7 @@ async function prepare(id: string) {
   note.value = found.note ?? ''
   creditSite.value = found.credit?.site ?? ''
   creditUrl.value = found.credit?.url ?? ''
+  return true
 }
 
 function ingredientLabel(id: string): string {
@@ -224,12 +235,12 @@ function confirmRemove() {
   transition: border-color 180ms var(--ease-out);
 }
 
-.input:focus,
-.area:focus,
-.steps:focus,
-.amount-input:focus,
-.extra-name:focus,
-.extra-amount:focus {
+.input.is-focus,
+.area.is-focus,
+.steps.is-focus,
+.amount-input.is-focus,
+.extra-name.is-focus,
+.extra-amount.is-focus {
   border-color: var(--color-earth);
 }
 

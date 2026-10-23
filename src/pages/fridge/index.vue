@@ -28,8 +28,11 @@
       <input
         v-model="draft"
         class="input"
+        :class="{ 'is-focus': customFocused }"
         placeholder="自定义食材"
         confirm-type="done"
+        @focus="customFocused = true"
+        @blur="customFocused = false"
         @confirm="submitCustom"
       />
       <button class="add-btn" hover-class="none" @tap="submitCustom">添加</button>
@@ -47,6 +50,7 @@ import { useFridge } from '@/composables/useFridge'
 
 const { have, custom, toggle, clearHave, addCustom, load } = useFridge()
 const draft = ref('')
+const customFocused = ref(false)
 
 onShow(() => {
   void load()
@@ -143,7 +147,7 @@ function submitCustom() {
   transition: border-color 180ms var(--ease-out);
 }
 
-.input:focus {
+.input.is-focus {
   border-color: var(--color-earth);
 }
 

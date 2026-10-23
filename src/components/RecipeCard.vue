@@ -5,9 +5,10 @@
     :style="{ animationDelay: `${delay}ms` }"
     @tap.stop="emit('open')"
   >
-    <view class="lift" :class="{ pictured: cover }">
-      <view v-if="cover" class="photo-box">
-        <image class="photo" :src="cover" mode="aspectFill" />
+    <view class="lift" :class="{ pictured: cover || marked }">
+      <view v-if="cover || marked" class="photo-box" :class="{ marked }">
+        <image v-if="cover" class="photo" :src="cover" mode="aspectFill" @error="emit('coverError')" />
+        <AppIcon v-else name="mine" :size="56" />
       </view>
       <view class="face">
         <view class="name">{{ name }}</view>
@@ -18,18 +19,22 @@
 </template>
 
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
+
 withDefaults(
   defineProps<{
     name: string
     missing: string[]
     cover?: string
+    marked?: boolean
     delay?: number
   }>(),
-  { cover: '', delay: 0 },
+  { cover: '', marked: false, delay: 0 },
 )
 
 const emit = defineEmits<{
   open: []
+  coverError: []
 }>()
 </script>
 
@@ -81,6 +86,12 @@ const emit = defineEmits<{
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+}
+
+.photo-box.marked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .photo {

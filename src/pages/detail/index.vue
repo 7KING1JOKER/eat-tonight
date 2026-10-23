@@ -1,7 +1,7 @@
 <template>
   <view class="page">
-    <EmptyState v-if="!recipe" title="没有这道菜" />
-    <template v-else>
+    <EmptyState v-if="settled && !recipe" title="没有这道菜" />
+    <template v-else-if="recipe">
       <view class="rise head" :style="delay(riseOf.head)">
         <text class="name">{{ recipe.name }}</text>
         <view class="meta">
@@ -78,13 +78,14 @@ import RichLine from '@/components/RichLine.vue'
 import { useFridge } from '@/composables/useFridge'
 import { useRecipes } from '@/composables/useRecipes'
 import { useJournal } from '@/composables/useJournal'
-import type { Matched, RecipeSource } from '@/types/eat'
+import type { Matched, Recipe, RecipeSource } from '@/types/eat'
 import { hasInlineText } from '@/utils/inlineMarkdown'
 import { CACHE_KEY_DETAIL, readCache } from '@/utils/storage'
 
 const { have, ingredients, custom, load } = useFridge()
 const { official, mine, load: loadRecipes } = useRecipes()
 const recipe = ref<Matched | null>(null)
+const settled = ref(false)
 const { recordJournal } = useJournal()
 
 const ingredientName = computed(() => {
@@ -156,29 +157,41 @@ onLoad((query) => {
   const id = String(query?.id ?? '')
   const source = String(query?.source ?? 'official') as RecipeSource
   let noted = false
-  function noteView(name: string) {
-    if(noted || !id || !name) return
+  function noteView(name: string, viewed: RecipeSource) {
+    if (noted || !id || !name) return
     noted = true
-    recordJournal({ at: Date.now(), kind: 'view', id, name, source })
+    recordJournal({ at: Date.now(), kind: 'view', id, name, source: viewed })
   }
-  const cached = readCache<Matched>(CACHE_KEY_DETAIL)
-  if (cached && cached.id === id && cached.source === source) {
-    recipe.value = cached
-    noteView(cached.name)
+  function locate(): { found: Recipe; source: RecipeSource } | null {
+    const order: RecipeSource[] = source === 'mine' ? ['mine', 'official'] : ['official', 'mine']
+    for (const itemSource of order) {
+      const list = itemSource === 'mine' ? mine.value : official.value
+      const found = list.find((item) => item.id === id)
+      if (found) return { found, source: itemSource }
+    }
+    return null
   }
-  void (async () => {
-    await Promise.all([load(), loadRecipes()])
-    if (recipe.value?.id === id && recipe.value.source === source) return
-    const list = source === 'mine' ? mine.value : official.value
-    const found = list.find((item) => item.id === id)
-    if (!found) return
+  function show(): boolean {
+    const hit = locate()
+    if (!hit) return false
     const owned = new Set(have.value)
     recipe.value = {
-      ...found,
-      source,
-      missing: found.need.filter((itemId) => !owned.has(itemId)),
+      ...hit.found,
+      source: hit.source,
+      missing: hit.found.need.filter((itemId) => !owned.has(itemId)),
     }
-    noteView(found.name)
+    noteView(hit.found.name, hit.source)
+    return true
+  }
+  const cached = readCache<Matched>(CACHE_KEY_DETAIL)
+  if (cached && cached.id === id && cached.source === source) recipe.value = cached
+  void (async () => {
+    const pending = Promise.all([load(), loadRecipes()])
+    const seen = show()
+    await pending
+    const seenAfter = show()
+    if (!seen && !seenAfter && recipe.value) noteView(recipe.value.name, recipe.value.source)
+    settled.value = true
   })()
 })
 </script>
