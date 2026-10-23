@@ -29,7 +29,7 @@ interface CloudDoc {
  */
 interface CloudQuery {
   get(): Promise<{ data: CloudDoc | CloudDoc[] }>
-  update(options: { data: Record<string, unknown> }): Promise<unknown>
+  update(options: { data: Record<string, unknown> }): Promise<{ stats?: { updated?: number } }>
   set(options: { data: Record<string, unknown> }): Promise<unknown>
   remove(): Promise<unknown>
 }
@@ -50,11 +50,27 @@ interface CloudCollection {
   doc(id: string): CloudQuery
   where(query: Record<string, unknown>): CloudCollection
   add(options: { data: Record<string, unknown> }): Promise<unknown>
+  update(options: { data: Record<string, unknown> }): Promise<unknown>
+  remove(): Promise<{ stats?: { removed?: number } }>
 }
 
 /** `wx.cloud.database()` 的返回值。`collection` 按名字取出上面的一张集合。 */
 interface WxDatabase {
   collection(name: string): CloudCollection
+}
+
+interface TempFileItem {
+  fileID?: string
+  tempFileURL?: string
+  status?: number
+}
+
+interface WxCloudStorage {
+  getTempFileURL(options: {
+    fileList: string[]
+    success?: (res: { fileList?: TempFileItem[] }) => void
+    fail?: (err: unknown) => void
+  }): Promise<{ fileList?: TempFileItem[] }> | void
 }
 
 /** 当前环境的云数据库。没有 wx.cloud 或未配置环境 ID 时抛错，由 composable 捕获。 */
@@ -132,6 +148,26 @@ export async function getFridge(openid: string): Promise<{ have: string[]; custo
 }
 
 /**
+ * 整份覆盖一条以 openid 为 `_id` 的文档。
+ * 文档不存在时，`update` 仍会成功，只是 `stats.updated` 为 0，不会抛错。
+ * 这时必须再 `set`，否则云上没有文档，调用方也不会提示未同步。
+ */
+async function replaceUserDoc(
+  name: 'fridges' | 'journals',
+  openid: string,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const doc = database().collection(name).doc(openid)
+  try {
+    const res = await doc.update({ data })
+    if ((res.stats?.updated ?? 0) > 0) return
+  } catch {
+    // 旧基础库在文档不存在时会拒绝。下面统一改走 set。
+  }
+  await doc.set({ data })
+}
+
+/**
  * 覆盖写入冰箱。文档不存在时改为 set。
  * custom 是可选的自定义食材名，匹配只用其中的 id。
  */
@@ -140,13 +176,7 @@ export async function setFridge(
   have: string[],
   custom: CustomIngredient[] = [],
 ): Promise<void> {
-  const doc = database().collection('fridges').doc(openid)
-  const data = { have, custom }
-  try {
-    await doc.update({ data })
-  } catch {
-    await doc.set({ data })
-  }
+  await replaceUserDoc('fridges', openid, { have, custom })
 }
 
 /** 读取当前用户的自建菜，并标成 mine。 */
@@ -164,7 +194,10 @@ export async function fetchMyRecipes(openid: string): Promise<Recipe[]> {
     }))
 }
 
-/** 按业务 id 新增或覆盖一道我的菜。云规则用 ownerId 限制本人。 */
+/**
+ * 按业务 id 新增或覆盖一道我的菜。云规则用 ownerId 限制本人。
+ * 更新必须走 where，条件里带上 ownerId。只按 `_id` 调用 doc().update() 会被安全规则拒绝。
+ */
 export async function upsertMyRecipe(recipe: Recipe & { ownerId: string }): Promise<void> {
   const col = database().collection('my_recipes')
   const found = await col.where({ id: recipe.id, ownerId: recipe.ownerId }).limit(1).get()
@@ -183,7 +216,7 @@ export async function upsertMyRecipe(recipe: Recipe & { ownerId: string }): Prom
   }
   const existing = found.data[0]
   if (existing?._id) {
-    await col.doc(existing._id).update({ data })
+    await col.where({ _id: existing._id, ownerId: recipe.ownerId }).update({ data })
     return
   }
   await col.add({ data })
@@ -201,13 +234,7 @@ export async function getJournal(openid: string): Promise<JournalEvent[]> {
  * 集合与冰箱相同，只有本人可读写。不在这里创建集合。
  */
 export async function setJournal(openid: string, events: JournalEvent[]): Promise<void> {
-  const doc = database().collection('journals').doc(openid)
-  const data = { events }
-  try {
-    await doc.update({ data })
-  } catch {
-    await doc.set({ data })
-  }
+  await replaceUserDoc('journals', openid, { events })
 }
 
 /**
@@ -221,11 +248,61 @@ export async function fetchCovers(): Promise<{ id: string; fileID: string }[]> {
     .map((row) => ({ id: String(row.id), fileID: String(row.fileID) }))
 }
 
-/** 按业务 id 删除我的菜。删不到文档时抛错。 */
+/**
+ * 用云文件编号换 https 临时链接。
+ * 免费套餐不能把存储改成公有读，直接拼的 tcb 地址会 403。
+ * 自定义组件里的 image 会把 `cloud://` 拼到组件目录上，所以这里不返回原编号。
+ * 单次最多 50 个。没有 wx.cloud 时返回空表。
+ */
+export async function tempFileUrls(fileIDs: string[]): Promise<Record<string, string>> {
+  const host = globalThis as { wx?: { cloud?: WxCloudStorage } }
+  const cloud = host.wx?.cloud
+  if (!cloud?.getTempFileURL || !hasCloudEnv()) return {}
+  const map: Record<string, string> = {}
+  for (let i = 0; i < fileIDs.length; i += 50) {
+    const slice = fileIDs.slice(i, i + 50)
+    try {
+      const res = await requestTempFileURL(cloud, slice)
+      const list = res.fileList ?? []
+      list.forEach((item, index) => {
+        const url = item.tempFileURL
+        if (url && (item.status === 0 || item.status === undefined)) map[slice[index]] = url
+      })
+    } catch {
+      // 权限不足或接口失败时留下空表，卡片继续用亚麻色块。
+    }
+  }
+  return map
+}
+
+function requestTempFileURL(
+  cloud: WxCloudStorage,
+  fileList: string[],
+): Promise<{ fileList?: TempFileItem[] }> {
+  return new Promise((resolve, reject) => {
+    let settled = false
+    const finish = (res: { fileList?: TempFileItem[] }) => {
+      if (settled) return
+      settled = true
+      resolve(res)
+    }
+    const fail = (err: unknown) => {
+      if (settled) return
+      settled = true
+      reject(err)
+    }
+    const ret = cloud.getTempFileURL({ fileList, success: finish, fail })
+    if (ret && typeof (ret as Promise<unknown>).then === 'function') {
+      ;(ret as Promise<{ fileList?: TempFileItem[] }>).then(finish, fail)
+    }
+  })
+}
+
+/**
+ * 按业务 id 删除我的菜。
+ * 安全规则要求查询条件包含 ownerId，doc(_id).remove() 只有 `_id`，会被拒绝。
+ * 云上没有这条时不抛错，调用方继续删本地副本。
+ */
 export async function removeMyRecipe(id: string, ownerId: string): Promise<void> {
-  const col = database().collection('my_recipes')
-  const found = await col.where({ id, ownerId }).limit(1).get()
-  const existing = found.data[0]
-  if (!existing?._id) throw new Error('没有这道菜')
-  await col.doc(existing._id).remove()
+  await database().collection('my_recipes').where({ id, ownerId }).remove()
 }

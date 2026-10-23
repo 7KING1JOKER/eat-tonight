@@ -70,6 +70,7 @@ const emit = defineEmits<{
 
 .filter-name {
   font-size: 26rpx;
+  line-height: 1;
   color: var(--color-text);
 }
 

@@ -221,6 +221,16 @@ function confirmRemove() {
   background: transparent;
   color: var(--color-text);
   font-size: 30rpx;
+  transition: border-color 180ms var(--ease-out);
+}
+
+.input:focus,
+.area:focus,
+.steps:focus,
+.amount-input:focus,
+.extra-name:focus,
+.extra-amount:focus {
+  border-color: var(--color-earth);
 }
 
 .input {
@@ -246,11 +256,16 @@ function confirmRemove() {
   margin-bottom: 16rpx;
 }
 
+.group-label .group-name {
+  margin-bottom: 0;
+}
+
 .group-name {
   display: block;
   margin-bottom: 16rpx;
   color: var(--color-earth);
   font-size: 26rpx;
+  line-height: 1;
   letter-spacing: 0.04em;
 }
 
@@ -288,6 +303,28 @@ function confirmRemove() {
 .add-extra {
   color: var(--color-earth);
   font-size: 24rpx;
+  transition: transform 180ms var(--ease-out), color 180ms var(--ease-out);
+}
+
+.extra-remove:active,
+.add-extra:active {
+  transform: scale(0.96);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .input:hover,
+  .area:hover,
+  .steps:hover,
+  .amount-input:hover,
+  .extra-name:hover,
+  .extra-amount:hover {
+    border-color: var(--color-earth);
+  }
+
+  .extra-remove:hover,
+  .add-extra:hover {
+    color: var(--color-text);
+  }
 }
 
 .extra-remove {

@@ -93,6 +93,11 @@ function submitCustom() {
   color: var(--color-almost);
   font-size: 26rpx;
   letter-spacing: 0.04em;
+  transition: color 180ms var(--ease-out), transform 180ms var(--ease-out);
+}
+
+.clear:active {
+  transform: scale(0.96);
 }
 
 .group-label {
@@ -109,6 +114,7 @@ function submitCustom() {
 .group-name {
   color: var(--color-earth);
   font-size: 26rpx;
+  line-height: 1;
   letter-spacing: 0.04em;
 }
 
@@ -134,6 +140,11 @@ function submitCustom() {
   background: transparent;
   color: var(--color-text);
   font-size: 30rpx;
+  transition: border-color 180ms var(--ease-out);
+}
+
+.input:focus {
+  border-color: var(--color-earth);
 }
 
 .add-btn {
@@ -145,5 +156,15 @@ function submitCustom() {
   background: var(--color-ready);
   color: var(--color-on-ready);
   font-size: 30rpx;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .clear:hover {
+    color: var(--color-text);
+  }
+
+  .input:hover {
+    border-color: var(--color-earth);
+  }
 }
 </style>

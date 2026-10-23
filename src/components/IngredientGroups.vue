@@ -172,6 +172,7 @@ function shownItems(group: IngredientGroup) {
 .group-name {
   color: var(--color-earth);
   font-size: 26rpx;
+  line-height: 1;
   letter-spacing: 0.04em;
 }
 

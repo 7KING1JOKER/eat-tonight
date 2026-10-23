@@ -1,11 +1,11 @@
 <template>
   <view v-if="pages > 1" class="pager">
     <view class="btn" :class="{ off: page <= 1 }" @tap="go(page - 1)">
-      <AppIcon name="arrow-left" />
+      <AppIcon name="arrow-left" :size="24" />
     </view>
     <text class="index">{{ page }} / {{ pages }}</text>
     <view class="btn" :class="{ off: page >= pages }" @tap="go(page + 1)">
-      <AppIcon name="arrow-right" />
+      <AppIcon name="arrow-right" :size="24" />
     </view>
   </view>
 </template>
@@ -43,6 +43,7 @@ function go(next: number) {
 
 .index {
   font-size: 24rpx;
+  line-height: 1;
   color: var(--color-text);
 }
 

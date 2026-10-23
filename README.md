@@ -1,54 +1,163 @@
 # 今晚吃啥
 
-根据冰箱里已有的食材，筛选今晚能做、以及还差一两样的家常菜。可以记下自己的菜谱。一套 UniApp Vue 3 + TypeScript 代码，发布微信小程序和 H5。
+根据冰箱里已有的食材，筛选今晚能做的家常菜，以及还差一两样的菜。可以记下自己的菜谱。一套 UniApp Vue 3 + TypeScript 代码，同时跑微信小程序和 H5。
 
-官方菜谱文字来自[程序员做饭指南](https://github.com/Anduin2017/HowToCook)。封面是生成的配图，不是菜谱原图。
+官方菜谱文字来自[程序员做饭指南](https://github.com/Anduin2017/HowToCook)（Unlicense）。封面是生成的配图，不是菜谱原图。没有点餐、外卖、下单，也不做智能生成。
 
-## 路线
+## 功能
 
-路线 1b：官方菜和食材的主数据在微信云，匹配在手机上算。云函数只有 `login`，只返回 openid，不在云函数里做匹配。
+- **冰箱**：按组勾选已有食材。可以添加自定义食材。清空只去掉勾选，食材名字还在。
+- **吃啥**：空冰箱时提示「先去冰箱勾食材」。有勾选时分成「今晚能做」和「还差」。
+- **搜索**：按菜名或食材名在全部官方菜和我的菜里找，不看冰箱里有没有。找不到时显示「没有找到这道菜」。
+- **详情**：已有和还缺的食材、用量、步骤。步骤里的强调会加粗。出处可复制链接。
+- **我的**：当天的冰箱变化、看过的菜、写下的菜。下方可以新建和删除自建菜谱。
+- **封面**：官方菜有云端配图时显示方图，没有编号时是亚麻色块。自建菜谱没有封面。
 
-`data/recipes.json` 和 `data/ingredients.json` 是导入云数据库的来源，也是测试夹具。`src/cloud/env.ts` 里的 `CLOUD_ENV_ID` 现在是空字符串。这时 `useRecipes` 和 `useFridge` 通过 `readSeedBundle()` 用包里的种子，页面可以先看。填上环境 ID 之后，运行时改读云，这两份 JSON 不再当主数据。
+## 技术栈
 
-吃啥卡片如果读到云存储文件编号，就显示封面。编号为空时仍是亚麻色块。封面图片不放进主包。
+| | |
+|---|---|
+| 端 | UniApp Vue 3、TypeScript、Vite |
+| 测试 | Vitest |
+| 微信 | 云开发：数据库、云存储、一个云函数 |
+| 包管理 | pnpm，Node 20 |
+
+匹配在手机上算。云函数只有 `login`，只返回 openid。
+
+## 本地运行
+
+```bash
+pnpm install
+pnpm dev:h5          # 浏览器
+pnpm dev:mp-weixin   # 微信小程序，不是 dev:wx
+pnpm test
+pnpm type-check
+pnpm build:mp-weixin # 正式包，输出 dist/build/mp-weixin
+```
+
+微信开发者工具导入 `dist/dev/mp-weixin`。云函数源码在仓库的 `cloudfunctions/login`，部署时把云函数目录指到这里，用「上传并部署：云端安装依赖」。不要把这个目录打进小程序包，也不要再部署第二个函数。
+
+`src/cloud/env.ts` 的 `CLOUD_ENV_ID` 已经填了当前使用的微信云环境。把它改成空字符串后，微信端不再请求云，页面用包里的种子数据。H5 即使填了环境 ID，也不调用 `wx.cloud`，登录用本机匿名 id。
+
+## 架构
+
+官方菜和食材的主数据在微信云。手机拉下来之后在本地匹配，改一道菜不用发版。
+
+```mermaid
+flowchart LR
+  subgraph cloud [微信云]
+    login[login 云函数]
+    db[(数据库)]
+    storage[云存储封面]
+  end
+  subgraph phone [手机]
+    cache[本地缓存]
+    match[matchRecipes]
+    pages[吃啥 / 冰箱 / 我的]
+  end
+  login -->|openid| pages
+  db --> cache --> match --> pages
+  storage -->|临时链接| pages
+  pages -->|冰箱、自建菜、习惯| db
+```
+
+`#ifdef` 只出现在 `src/cloud/auth.ts`：微信里初始化云并调用 `login`；H5 生成本地匿名 id。
+
+`data/recipes.json` 和 `data/ingredients.json` 是导入云数据库的来源，也是测试夹具。云可用时，运行时以云上的文档为准，这两份 JSON 不再当主数据。云失败、而且缓存和内存都空时，才用种子把列表填上。
+
+## 页面
+
+`src/pages.json`：
+
+| 位置 | 页面 |
+|---|---|
+| 主包，底部三个标签 | 吃啥、冰箱、我的 |
+| 主包 | 编辑菜谱 |
+| 分包 | 菜谱详情、隐私说明 |
+
+吃啥页会预载详情分包。我的页会预载详情和隐私说明。
+
+吃啥列表在手机上是两列。窗口窄于约 300px 时一列，不窄于 768px 时四列。导航和标签栏是 `#E8E0C8`，页面底是亚麻色 `#F4F1DE`。
 
 ## 匹配
 
-`matchRecipes`（`src/utils/match.ts`）：
+`matchRecipes`（`src/utils/match.ts`）只看菜谱的 `need`：
 
 - 缺 0 样，进「今晚能做」。
 - 缺 1 或 2 样，并且冰箱里已经有这道菜的至少一样食材，进「还差」。
 - 缺 3 样及以上、`need` 为空、或冰箱里一样都没有的菜，不出现。
 
-空冰箱不在这个函数里特殊处理。`useMatch` 在没有勾选时不调用它，吃啥页显示「先去冰箱勾食材」。
+同一组里，缺得更少的在前；缺的样数相同，则用料更短的在前；再相同，官方菜在自建菜前面；最后按中文菜名。
 
-## 缓存
+空冰箱不在这个函数里特殊处理。`useMatch` 在没有勾选时不调用它，吃啥页显示「先去冰箱勾食材」。两边都没有菜时显示「没有能做或只差一两样的菜」。
 
-打开页面先读本机缓存，再在后台刷新。拉取失败不把旧缓存盖成空。缓存和内存都空、云又失败时，才用种子填上。
+搜索框有字时，不走上面的分流。范围是全部官方菜和我的菜，菜名或食材名包含关键字即可。菜名命中的排在前面。卡片上的「缺」仍按当前冰箱计算，只用于展示。
 
-冰箱先写本机。云环境还没配置时，只留在本机，不提示。已经配置云环境、但登录失败或写入失败时，勾选保持原样，toast「未同步」。
+吃啥页还可以按菜谱目录筛选：荤菜、素菜、水产、主食、汤羹、早餐、甜品、饮品、调味、半成品。自建菜归在「我的」。
 
-## 条件编译与分包
+## 冰箱与自建菜
 
-`#ifdef` 只出现在 `src/cloud/auth.ts`。微信里初始化云并调用 `login`。H5 生成本地匿名 id，不调用 `wx.cloud`。
+官方食材编号以 `o_` 开头，按组排列：蔬菜、肉类、水产、蛋奶豆、主食、干货坚果、水果、调味。自定义食材编号是 `c_` 加 8 位小写字母或数字，单独放在「自定义」。去掉首尾空格后的同名自定义食材不会再插一条。
 
-`src/pages.json`：
+自建菜谱保存在 `my_recipes`，`source` 为 `mine`，用 `ownerId` 限制本人。官方菜读出来一律标成 `official`，库里的文档可以不存 `source`。
 
-- 主包：吃啥、冰箱、我的、编辑菜谱。
-- 分包：菜谱详情、隐私说明。
+## 云数据库
 
-## 本地运行
+集合和安全规则在微信云控制台配置，不写进代码。控制台导入和云函数不受这些规则限制。
 
-```bash
-pnpm dev:h5
-pnpm dev:mp-weixin
-pnpm test
-pnpm type-check
+| 集合 | 谁能读写 | 端上 |
+|---|---|---|
+| `ingredients` | 登录可读 | 只读。食材 `id`、`name`、`group` |
+| `recipes` | 登录可读 | 只读。菜谱可以没有 `source` |
+| `covers` | 登录可读 | 只读。字段只有菜谱 `id` 和云存储 `fileID` |
+| `fridges` | 文档 `_id` 等于当前 openid | 勾选 `have` 和自定义食材 `custom` |
+| `journals` | 文档 `_id` 等于当前 openid | 习惯记录 `events` |
+| `my_recipes` | `ownerId` 等于当前 openid | 自建菜的增删改 |
+
+导入用 JSON Lines（一行一个对象，扩展名仍是 `.json`）。不要直接导入仓库里的 JSON 数组，也不要和封面 jpg 一起导入。单次读取最多 20 条，`fetchAll` 会翻页。
+
+## 缓存与未同步
+
+打开页面先读本机缓存，再在后台刷新。拉取失败不把旧缓存盖成空。
+
+冰箱、自建菜和习惯记录都先写本机，失败不回滚。还没配置云环境时，只留在本机，不提示。已经配置了云、但登录失败或写入失败时，勾选和记录保持原样，并 toast「未同步」。
+
+本机缓存键：`eat.recipes`、`eat.ingredients`、`eat.fridge`、`eat.myRecipes`、`eat.detail`、`eat.journal`。H5 另有 `eat.anonId`。微信和 H5 的存储互不相通。
+
+## 封面
+
+345 张 jpg 在云存储的 `covers/` 目录，文件名是菜谱 `id`。`fileID` 只写在 `covers` 集合里，不写进 `data/recipes.json`，也不放进主包。
+
+吃啥页用 `wx.cloud.getTempFileURL` 把编号换成 https 临时链接，再交给卡片。换不到链接时卡片保持亚麻色块，不把 `cloud://` 直接塞进图片地址。云存储需要允许当前小程序用户读取这些文件，临时链接才会成功。
+
+## 目录
+
+```text
+cloudfunctions/login/   只返回 openid 的云函数
+data/                   官方食材和菜谱，导入源与测试夹具
+src/cloud/              环境 ID、登录、数据库读写
+src/components/         菜谱卡片、食材分组、空状态等
+src/composables/        冰箱、菜谱、匹配、习惯记录
+src/pages/              吃啥、冰箱、我的、详情、隐私
+src/utils/              matchRecipes、封面编号、缓存、习惯汇总
 ```
 
-微信开发者工具打开 `dist/dev/mp-weixin`。命令是 `dev:mp-weixin`，不是 `dev:wx`。
+## 测试
 
-## 简历
+```bash
+pnpm test
+pnpm exec vitest run src/utils/match.spec.ts
+```
+
+`matchRecipes` 的分流由单测锁住。封面编号、习惯汇总、行内强调也有对应的 `*.spec.ts`。
+
+## 出处
+
+菜谱正文、步骤和用量来自[程序员做饭指南](https://github.com/Anduin2017/HowToCook)，公有领域，可自由复制和使用。应用代码本身另有自己的仓库，不把这份说明写成整仓都是 Unlicense。
+
+封面是 Nano Banana 生成的配图，不是菜谱原图，也不使用 HowToCook 的照片。
+
+## 设计取舍
 
 基于 UniApp Vue3 + TypeScript 的 C 端小程序「今晚吃啥」，一套代码发布微信与 H5。根据已有食材筛选能做及还差 1～2 样的家常菜；官方菜谱云端可改、匹配在端上计算。
 

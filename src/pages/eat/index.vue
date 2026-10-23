@@ -1,12 +1,14 @@
 <template>
   <view class="page">
-    <view class="search-box">
-      <AppIcon name="search" />
+    <view class="search-box" :class="{ 'is-focus': searchFocus }">
+      <AppIcon name="search" :size="30" />
       <input
         v-model="keyword"
         class="search"
         placeholder="搜索菜名或食材"
         confirm-type="search"
+        @focus="searchFocus = true"
+        @blur="searchFocus = false"
       />
     </view>
     <view class="ledger">
@@ -132,7 +134,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import Pager from '@/components/Pager.vue'
 import RecipeCard from '@/components/RecipeCard.vue'
 import SkeletonList from '@/components/SkeletonList.vue'
-import { fetchCovers } from '@/cloud/db'
+import { fetchCovers, tempFileUrls } from '@/cloud/db'
 import { hasCloudEnv } from '@/cloud/env'
 import { useFridge } from '@/composables/useFridge'
 import { useMatch } from '@/composables/useMatch'
@@ -143,12 +145,17 @@ import { CATEGORY_ORDER, recipeCategory } from '@/utils/recipeCategory'
 import { CACHE_KEY_DETAIL, writeCache } from '@/utils/storage'
 
 const PAGE_SIZE = 8
+const SEARCH_WAIT = 200
 
 const { have, ingredients, custom, load: loadFridge } = useFridge()
 const { official, mine, loading, loadError, load: loadRecipes, removeMine } = useRecipes()
 const { ready, almost } = useMatch()
 const category = ref('全部')
 const keyword = ref('')
+const query = ref('')
+let queryTimer: ReturnType<typeof setTimeout> | undefined
+
+const searchFocus = ref(false)
 const showingMine = ref(false)
 const readyPage = ref(1)
 const almostPage = ref(1)
@@ -157,7 +164,7 @@ const coverMap = ref<Record<string, string>>({})
 
 const showSkeleton = computed(() => loading.value && official.value.length === 0 && mine.value.length === 0)
 const noRecipes = computed(() => loadError.value && official.value.length === 0 && mine.value.length === 0)
-const query = computed(() => keyword.value.trim())
+
 const noMatch = computed(() => readyFiltered.value.length === 0 && almostFiltered.value.length === 0)
 
 const named = computed(() => {
@@ -242,8 +249,12 @@ async function loadCovers() {
   }
   try {
     const rows = await fetchCovers()
+    const urls = await tempFileUrls(rows.map((row) => row.fileID))
     const next: Record<string, string> = {}
-    for (const row of rows) next[row.id] = row.fileID
+    for (const row of rows) {
+      const url = urls[row.fileID]
+      if (url) next[row.id] = url
+    }
     coverMap.value = next
   } catch {
     coverMap.value = {}
@@ -263,6 +274,18 @@ function pickCategory(name: string) {
   almostPage.value = 1
   searchPage.value = 1
 }
+
+watch(keyword, (value) => {
+  const text = value.trim()
+  clearTimeout(queryTimer)
+  if(!text) {
+    query.value = ''
+    return
+  }
+  queryTimer = setTimeout(() => {
+    query.value = text
+  }, SEARCH_WAIT)
+})
 
 watch(query, () => {
   readyPage.value = 1
@@ -347,11 +370,21 @@ onShow(() => {
   padding: 0 24rpx;
   border: 1px solid var(--color-line);
   border-radius: 24rpx;
+  transition: border-color 180ms var(--ease-out), transform 180ms var(--ease-out);
+}
+
+.search-box:active:not(.is-focus) {
+  transform: scale(0.98);
+}
+
+.search-box.is-focus {
+  border-color: var(--color-earth);
 }
 
 .search {
   flex: 1;
   height: 72rpx;
+  line-height: 72rpx;
   background: transparent;
   color: var(--color-text);
   font-size: 30rpx;
@@ -378,6 +411,7 @@ onShow(() => {
 .ledger-text {
   color: var(--color-earth);
   font-size: 26rpx;
+  line-height: 1;
   letter-spacing: 0.06em;
   transition: color 180ms var(--ease-out);
 }
@@ -446,6 +480,10 @@ onShow(() => {
 }
 
 @media (hover: hover) and (pointer: fine) {
+  .search-box:hover {
+    border-color: var(--color-earth);
+  }
+
   .ledger-link:hover .ledger-text {
     color: var(--color-text);
   }
