@@ -17,8 +17,13 @@ dist
 
 # Editor directories and files
 .idea
+.vscode/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+
+# 微信开发者工具的本机项目配置，指向本地编译目录
+project.config.json
+project.private.config.json
