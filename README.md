@@ -6,6 +6,14 @@
 
 一套 UniApp Vue 3 + TypeScript 代码，可以同时跑微信小程序和 H5。官方菜谱文字来自[程序员做饭指南](https://github.com/Anduin2017/HowToCook)（Unlicense）。封面是生成的配图，不是菜谱原图。没有点餐、外卖、下单，也不做智能生成。
 
+<p align="center">
+  <img src="docs/images/1.png" width="210" height="453" hspace="16" align="middle" alt="吃啥页：今晚能做和还差一两样">
+  <img src="docs/images/2.png" width="210" height="453" hspace="16" align="middle" alt="冰箱页：按组勾选已有食材">
+  <img src="docs/images/3.png" width="210" height="453" hspace="16" align="middle" alt="我的页：当天的冰箱变化和常勾食材">
+</p>
+
+<p align="center">吃啥、冰箱、我的。截图来自已上线的微信小程序，云端封面只在小程序里完整显示。</p>
+
 ## 功能
 
 - **冰箱**：按组勾选已有食材。可以添加自定义食材。清空只去掉勾选，食材名字还在。
@@ -81,6 +89,14 @@ flowchart LR
 
 吃啥列表在手机上是两列。窗口窄于约 300px 时一列，不窄于 768px 时四列。导航和标签栏是 `#E8E0C8`，页面底是亚麻色 `#F4F1DE`。
 
+<p align="center">
+  <img src="docs/images/4.png" width="210" height="453" hspace="16" align="middle" alt="新建菜谱">
+  <img src="docs/images/5.png" width="210" height="453" hspace="16" align="middle" alt="菜谱详情：已有、还差和用量">
+  <img src="docs/images/6.png" width="210" height="453" hspace="16" align="middle" alt="菜谱详情：步骤、说明和出处">
+</p>
+
+<p align="center">新建菜谱，以及同一道菜详情的上下两段：上面是已有、还差和用量，下面是步骤、说明和出处。</p>
+
 ## 匹配
 
 `matchRecipes`（`src/utils/match.ts`）只看菜谱的 `need`：
@@ -135,6 +151,7 @@ flowchart LR
 ## 目录
 
 ```text
+docs/images/            已上线小程序的页面截图，只给 README 用
 cloudfunctions/login/   只返回 openid 的云函数
 data/                   官方食材和菜谱，导入源与测试夹具
 src/cloud/              环境 ID、登录、数据库读写
